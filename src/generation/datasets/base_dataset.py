@@ -7,15 +7,7 @@ import torch
 
 from typing import Protocol
 from dataclasses import dataclass
-
-
-@dataclass
-class DataModuleConfig(Protocol):
-    module: str
-    root: str = "./data"
-    num_workers: int = 0
-    batch_size: int = 64
-    pin_memory: bool = True
+from config import DataModuleConfig
 
 
 class DataModule(ABC):
@@ -46,7 +38,9 @@ class DataModule(ABC):
         if self.train_ds and self.test_ds and self.val_ds:
             return
 
-        self.train_ds, self.test_ds, self.val_ds = torch.utils.data.random_split(self.entire_ds, [0.4, 0.3, 0.3])
+        self.train_ds, self.test_ds, self.val_ds = torch.utils.data.random_split(
+            self.entire_ds, [0.4, 0.3, 0.3]
+        )
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(

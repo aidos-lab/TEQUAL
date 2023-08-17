@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "tequal"
+version = "0.1.0"
+description = "Topological Equivalency Classes for Understanding Autoencoder Latent Space Representations"
+authors = ["jeremy.wayland <jeremy.don.wayland@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+torch-geometric = "^2.3.1"
+numpy = "^1.25.2"
+ripser = "^0.6.4"
+giotto-tda = "^0.6.0"
+sklearn = "^0.0.post7"
+wandb = "^0.15.8"
+scikit-learn = "^1.3.0"
+omegaconf = "^2.3.0"
+torch = "^2.0.1"
+torchvision = "^0.15.2"
+pyyaml = "^6.0.1"
+python-dotenv = "^1.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
