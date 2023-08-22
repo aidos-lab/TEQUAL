@@ -17,7 +17,7 @@ class Logger:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
 
-        timestr = time.strftime("%Y%m%d-%H%M%S")
+        # timestr = time.strftime("%Y%m%d-%H%M%S")
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 
         ch = logging.StreamHandler()

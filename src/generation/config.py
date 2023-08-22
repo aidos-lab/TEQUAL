@@ -19,6 +19,7 @@ class Config:
 @dataclass
 class Meta:
     name: str
+    id: int
     project: str = "TEQUAL2023"
     tags: list[str] = field(default_factory=list)
 
@@ -38,7 +39,7 @@ class ModelConfig:
 class AutoEncoderConfig:
     module: str = "models.base"
     # Set Model Architechture
-    in_channels: int = 28 * 28
+    in_channels: int = 1
     hidden_dims: list = field(default_factory=list)
     latent_dim: int = 2
 
@@ -51,7 +52,7 @@ class AutoEncoderConfig:
 @dataclass
 class DataModuleConfig(Protocol):
     module: str
-    root: str = f"{utils.project_root_dir()}" + "data"
+    data_dir: str = f"{utils.project_root_dir()}" + "data"
     num_workers: int = 0
     batch_size: int = 64
     pin_memory: bool = False
@@ -60,7 +61,11 @@ class DataModuleConfig(Protocol):
 @dataclass
 class MnistConfig(DataModuleConfig):
     module: str = "datasets.mnist"
+    name: str = "MNIST"
     batch_size: int = 64
+    in_channels: int = 1
+    img_size: int = 28
+    num_classes: int = 10
 
 
 #  ╭──────────────────────────────────────────────────────────╮

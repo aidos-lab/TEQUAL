@@ -36,7 +36,7 @@ class MnistDataModule(DataModule):
                             transforms.RandomVerticalFlip(),
                             transforms.RandomHorizontalFlip(),
                             transforms.ToTensor(),
-                            transforms.Lambda(lambda x: torch.flatten(x)),
+                            # transforms.Lambda(lambda x: torch.flatten(x)),
                         ]
                     ),
                     download=True,
@@ -49,7 +49,7 @@ class MnistDataModule(DataModule):
                             transforms.RandomVerticalFlip(),
                             transforms.RandomHorizontalFlip(),
                             transforms.ToTensor(),
-                            transforms.Lambda(lambda x: torch.flatten(x)),
+                            # transforms.Lambda(lambda x: torch.flatten(x)),
                         ]
                     ),
                     download=True,

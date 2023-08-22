@@ -1,13 +1,26 @@
 import os
-from omegaconf import OmegaConf
+import pickle
 import shutil
+
+import numpy as np
 from dotenv import load_dotenv
+from omegaconf import OmegaConf
 
 # TODO: Which of these should be in loaders.factory?
 
 #  ╭──────────────────────────────────────────────────────────╮
 #  │ Utility Functions                                        │
 #  ╰──────────────────────────────────────────────────────────╯
+
+
+def save_embedding(latent_representation, config):
+    data_dir = os.path.join(config.data.data_dir, config.data.name)
+    sub_dir = os.path.join(data_dir, f"embeddings/{config.model.module}")
+    if not os.path.isdir(sub_dir):
+        os.makedirs(sub_dir)
+    file = os.path.join(sub_dir, f"embedding_{config.meta.id}")
+    with open(file, "wb") as f:
+        pickle.dump(np.array(latent_representation), f)
 
 
 def project_root_dir():
@@ -21,14 +34,14 @@ def count_parameters(model):
 
 
 def get_experiment_path():
-    name = read_parameter_file()["experiment"]
+    name = read_parameter_file()["generation_params"]["experiment"]
     root = project_root_dir()
     path = os.path.join(root, f"src/generation/experiments/{name}")
     return path
 
 
 def create_experiment_folder():
-    name = read_parameter_file()["experiment"]
+    name = read_parameter_file()["generation_params"]["experiment"]
     root = project_root_dir()
     path = os.path.join(root, f"src/generation/experiments/{name}")
     shutil.rmtree(path, ignore_errors=True)

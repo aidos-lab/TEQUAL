@@ -1,11 +1,11 @@
 import itertools
 
 import config
+import loaders.factory as loader
 import utils
 from config import *
-
-import loaders.factory as loader
-
+from datasets.mnist import MnistDataModule
+from omegaconf import OmegaConf
 
 #  ╭──────────────────────────────────────────────────────────╮
 #  │Helper Methods                                            │
@@ -14,7 +14,8 @@ import loaders.factory as loader
 
 def configure_datasets():
     """Initilize data sets from `params.yaml`"""
-    datasets = utils.read_parameter_file()["datasets"]
+    data_params = utils.read_parameter_file()["generation_params"]["data_params"]
+    datasets = data_params["datasets"]
     DataConfigs = []
     for set in datasets:
         class_name = utils.load_data_reference()[set]
@@ -25,23 +26,30 @@ def configure_datasets():
 
 def configure_models():
     """Initilize models from `params.yaml`"""
-    modules = utils.read_parameter_file()["models"]
-    hidden_dims = utils.read_parameter_file()["hidden_dims"]
+    model_params = utils.read_parameter_file()["generation_params"]["model_params"]
+    modules = model_params["models"]
+    hidden_dims = model_params["hidden_dims"]
+    latent_dim = model_params["latent_dim"]
+
+    # Get Number of Classes
 
     models = list(itertools.product(modules, hidden_dims))
     ModelConfigs = []
     for (module, hidden_dims) in models:
+        # TODO: Read in a specific Config class here
         cfg = AutoEncoderConfig(
             module=module,
             hidden_dims=hidden_dims,
+            latent_dim=latent_dim,
         )
         ModelConfigs.append(cfg)
     return ModelConfigs
 
 
 def configure_trainers():
-    learning_rates = utils.read_parameter_file()["lrs"]
-    epochs = utils.read_parameter_file()["epochs"]
+    trainer_params = utils.read_parameter_file()["generation_params"]["trainer_params"]
+    learning_rates = trainer_params["lrs"]
+    epochs = trainer_params["epochs"]
 
     coordinates = list(itertools.product(learning_rates, epochs))
     TrainerConfigs = []
@@ -61,11 +69,10 @@ def generate_experiments() -> None:
     This experiment trains and classifies Autoencoders on the parameters
     and dataset specified in the `params.yaml` file.
     """
-    params = utils.read_parameter_file()
+    params = utils.read_parameter_file()["generation_params"]
     folder = utils.create_experiment_folder()
 
     # Create meta data
-    meta = Meta(params["meta"])
 
     # Load Models from `params.yaml`
     models = configure_models()
@@ -76,15 +83,20 @@ def generate_experiments() -> None:
 
     # Initialize Experiments
     for i, (model, data, trainer) in enumerate(experiments):
+        meta = Meta(params["meta"], i)
         config = Config(meta, data, model, trainer)
         utils.save_config(config, folder, filename=f"config_{i}.yaml")
 
 
 if __name__ == "__main__":
-    from omegaconf import OmegaConf
-
     generate_experiments()
-    cfg = OmegaConf.load(
-        "/Users/jeremy.wayland/Desktop/projects/TEQUAL/src/generation/experiments/testing_refactor_loop/config_0.yaml"
-    )
-    print(loader.load_module("vanilla_vae", cfg.model))
+
+    # Testing
+    # cfg = OmegaConf.load(
+    #     "/Users/jeremy.wayland/Desktop/projects/TEQUAL/src/generation/experiments/testing_refactor_loop/config_1.yaml"
+    # )
+    # dm = loader.load_module("dataset", cfg.data)
+    # test_embedding = []
+    # for X, _ in dm.entire_ds:
+    #     test_embedding.append(X[0])
+    # utils.save_embedding(test_embedding, cfg)

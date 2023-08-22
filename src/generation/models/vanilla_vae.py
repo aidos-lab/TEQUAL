@@ -21,7 +21,7 @@ class VanillaVAE(BaseVAE):
             modules.append(
                 nn.Sequential(
                     nn.Conv2d(
-                        self.in_channels,
+                        in_channels=self.in_channels,
                         out_channels=h_dim,
                         kernel_size=3,
                         stride=2,
@@ -34,13 +34,13 @@ class VanillaVAE(BaseVAE):
             self.in_channels = h_dim
 
         self.encoder = nn.Sequential(*modules)
-        self.fc_mu = nn.Linear(self.hidden_dims[-1] * 4, self.latent_dim)
-        self.fc_var = nn.Linear(self.hidden_dims[-1] * 4, self.latent_dim)
+        self.fc_mu = nn.Linear(self.hidden_dims[-1], self.latent_dim)
+        self.fc_var = nn.Linear(self.hidden_dims[-1], self.latent_dim)
 
         # Build Decoder
         modules = []
 
-        self.decoder_input = nn.Linear(self.latent_dim, self.hidden_dims[-1] * 4)
+        self.decoder_input = nn.Linear(self.latent_dim, self.hidden_dims[-1])
 
         self.hidden_dims.reverse()
 
@@ -177,4 +177,4 @@ class VanillaVAE(BaseVAE):
 
 
 def initialize():
-    register("vanilla_vae", VanillaVAE)
+    register("model", VanillaVAE)

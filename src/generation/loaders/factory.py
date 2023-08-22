@@ -8,7 +8,7 @@ creation_funcs = {}
 
 def register(name: str, module):
     """Register modules such as datasets and models"""
-    print("Registerd")
+    print("Registered")
     creation_funcs[name] = module
 
 
