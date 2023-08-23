@@ -17,6 +17,7 @@ class TEQUAL:
 
         self.alpha = WeakAlphaPersistence(homology_dimensions=self.dims)
         self.diagrams = None
+        self.distance_relation = None
         self.eq_relation = None
 
     def generate_diagrams(self):
@@ -40,11 +41,15 @@ class TEQUAL:
         if self.diagrams is None:
             self.generate_diagrams()
 
+        # Log Quotient Parameters
+        self.epsilon = epsilon
+        self.metric = metric
+        self.linkage = linkage
+
         # Pairwise Distances
         distance_metric = PairwiseDistance(metric=metric)
-
         padded_diagrams = utils.gtda_pad(self.diagrams, self.dims)
-        distances = distance_metric.fit_transform(padded_diagrams)
+        self.distance_relation = distance_metric.fit_transform(padded_diagrams)
 
         self.eq_relation = AgglomerativeClustering(
             metric="precomputed",
@@ -53,7 +58,7 @@ class TEQUAL:
             distance_threshold=epsilon,
             n_clusters=None,
         )
-        self.eq_relation.fit(distances)
+        self.eq_relation.fit(self.distance_relation)
 
         return self.eq_relation
 
@@ -61,25 +66,25 @@ class TEQUAL:
         """Dendrogram height filtration"""
         pass
 
-    def plot_dendrogram(self, epsilon, **kwargs):
-        if self.eq_relation is None:
-            self.quotient(epsilon)
-        counts = np.zeros(self.eq_relation.children_.shape[0])
-        n_samples = len(self.eq_relation.labels_)
-        for i, merge in enumerate(self.eq_relation.children_):
-            current_count = 0
-            for child_idx in merge:
-                if child_idx < n_samples:
-                    current_count += 1  # leaf node
-                else:
-                    current_count += counts[child_idx - n_samples]
-            counts[i] = current_count
+    # def plot_dendrogram(self, epsilon, **kwargs):
+    #     if self.eq_relation is None:
+    #         self.quotient(epsilon)
+    #     counts = np.zeros(self.eq_relation.children_.shape[0])
+    #     n_samples = len(self.eq_relation.labels_)
+    #     for i, merge in enumerate(self.eq_relation.children_):
+    #         current_count = 0
+    #         for child_idx in merge:
+    #             if child_idx < n_samples:
+    #                 current_count += 1  # leaf node
+    #             else:
+    #                 current_count += counts[child_idx - n_samples]
+    #         counts[i] = current_count
 
-        linkage_matrix = np.column_stack(
-            [self.eq_relation.children_, self.eq_relation.distances_, counts]
-        ).astype(float)
+    #     linkage_matrix = np.column_stack(
+    #         [self.eq_relation.children_, self.eq_relation.distances_, counts]
+    #     ).astype(float)
 
-        # Plot the corresponding dendrogram
-        fig = dendrogram(linkage_matrix, **kwargs)
-        plt.show()
-        return fig
+    #     # Plot the corresponding dendrogram
+    #     fig = dendrogram(linkage_matrix, **kwargs)
+    #     plt.show()
+    #     return fig

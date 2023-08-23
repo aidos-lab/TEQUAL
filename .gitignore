@@ -10,5 +10,6 @@
 # Outputs
 data/
 *.yaml
+*.html
 
 
