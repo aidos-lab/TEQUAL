@@ -1,5 +1,5 @@
+import matplotlib.pyplot as plt
 import numpy as np
-import ripser
 from gtda.diagrams import PairwiseDistance
 from gtda.homology import WeakAlphaPersistence
 from scipy.cluster.hierarchy import dendrogram
@@ -10,25 +10,24 @@ import utils
 
 
 class TEQUAL:
-    def __init__(self, data: list, normalize: bool = False, max_dim: int = 0) -> None:
-        self.point_clouds = [np.squeeze(X) for X in data]
-        self.distances = np.array([pairwise_distances(X) for X in self.point_clouds])
-        self.thresholds = np.array([D.max() for D in self.distances])
-        if normalize:
-            self.point_clouds = [
-                X / self.thresholds[i] for i, X in enumerate(self.point_clouds)
-            ]
+    def __init__(self, data: list, max_dim: int = 1) -> None:
+        self.point_clouds = [utils.gtda_reshape(X) for X in data]
 
-        self.max_dim = max_dim
+        self.dims = tuple(range(max_dim + 1))
 
-        self.rips = ripser.Rips(maxdim=self.max_dim, verbose=False)
-        self.alpha = WeakAlphaPersistence(homology_dimensions=self.max_dim)
+        self.alpha = WeakAlphaPersistence(homology_dimensions=self.dims)
         self.diagrams = None
         self.eq_relation = None
 
     def generate_diagrams(self):
-        self.diagrams = [self.alpha.fit_transform(X) for X in self.point_clouds[:1]]
-        # self.diagrams = utils.convert_to_gtda(dgms, max_dim=self.max_dim)
+        diagrams = []
+        for X in self.point_clouds:
+            try:
+                diagram = np.squeeze(self.alpha.fit_transform(X))
+                diagrams.append(diagram)
+            except ValueError:
+                print("TRAINING ERROR: NaNs in the latent space representation")
+        self.diagrams = diagrams
         return self.diagrams
 
     def quotient(
@@ -42,8 +41,10 @@ class TEQUAL:
             self.generate_diagrams()
 
         # Pairwise Distances
-        distance_metric = PairwiseDistance(metric=metric, order=1)
-        distances = distance_metric.transform(self.diagrams)
+        distance_metric = PairwiseDistance(metric=metric)
+
+        padded_diagrams = utils.gtda_pad(self.diagrams, self.dims)
+        distances = distance_metric.fit_transform(padded_diagrams)
 
         self.eq_relation = AgglomerativeClustering(
             metric="precomputed",
@@ -60,9 +61,9 @@ class TEQUAL:
         """Dendrogram height filtration"""
         pass
 
-    def plot_dendrogram(self, **kwargs):
+    def plot_dendrogram(self, epsilon, **kwargs):
         if self.eq_relation is None:
-            self.quotient()
+            self.quotient(epsilon)
         counts = np.zeros(self.eq_relation.children_.shape[0])
         n_samples = len(self.eq_relation.labels_)
         for i, merge in enumerate(self.eq_relation.children_):
@@ -80,4 +81,5 @@ class TEQUAL:
 
         # Plot the corresponding dendrogram
         fig = dendrogram(linkage_matrix, **kwargs)
+        plt.show()
         return fig

@@ -3,6 +3,7 @@ import pickle
 import shutil
 
 import numpy as np
+import pandas as pd
 from dotenv import load_dotenv
 from omegaconf import OmegaConf
 
@@ -32,14 +33,14 @@ def read_parameter_file():
 
 
 def get_experiment_dir():
-    name = read_parameter_file()["generation_params"]["experiment"]
+    name = read_parameter_file()["experiment"]
     root = project_root_dir()
     path = os.path.join(root, f"src/experiments/{name}")
     return path
 
 
 def create_experiment_folder():
-    name = read_parameter_file()["generation_params"]["experiment"]
+    name = read_parameter_file()["experiment"]
     root = project_root_dir()
     path = os.path.join(root, f"src/experiments/{name}")
     shutil.rmtree(path, ignore_errors=True)
@@ -73,7 +74,7 @@ def save_embedding(latent_representation, config):
 
 def get_embeddings_dir(dataset: str, model: str):
     root = project_root_dir()
-    experiment = read_parameter_file()["generation_params"]["experiment"]
+    experiment = read_parameter_file()["experiment"]
     path = os.path.join(root, f"data/{dataset}/embeddings/{experiment}/{model}/")
     assert os.path.isdir(path), "Invalid Embeddings Directory"
     return path
@@ -92,48 +93,51 @@ def fetch_embeddings(dataset, model) -> list:
     return embeddings
 
 
-def convert_to_gtda(diagrams, max_dim):
-    homology_dimensions = range(max_dim + 1)
+def gtda_reshape(embedding):
+    X = np.squeeze(embedding)
+    return X.reshape(1, *X.shape)
 
-    slices = {
-        dim: slice(None) if (dim) else slice(None, -1) for dim in homology_dimensions
-    }
-    Xt = [
-        {dim: diagram[dim][slices[dim]] for dim in homology_dimensions}
-        for diagram in diagrams
-    ]
-    start_idx_per_dim = np.cumsum(
-        [0]
-        + [
-            np.max([len(diagram[dim]) for diagram in Xt] + [1])
-            for dim in homology_dimensions
-        ]
-    )
-    min_values = [
-        min(
-            [
-                np.min(diagram[dim][:, 0]) if diagram[dim].size else np.inf
-                for diagram in Xt
-            ]
+
+def gtda_pad(diagrams, dims=(0, 1)):
+    feature_counts = {}
+    for i, diagram in enumerate(diagrams):
+        feature_dims = diagram[:, 2:]
+        tmp = {}
+        for dim in dims:
+            num_features = sum(np.where(feature_dims == dim, True, False))[0]
+            tmp[dim] = num_features
+        feature_counts[i] = tmp
+
+    sizes = {}
+    for dim in dims:
+        counter = []
+        for id in feature_counts:
+            counter.append(feature_counts[id][dim])
+        sizes[dim] = max(counter)
+
+    total_features = sum(sizes.values())
+    padded = np.empty(
+        (
+            len(diagrams),
+            total_features,
+            3,
         )
-        for dim in homology_dimensions
-    ]
-    min_values = [min_value if min_value != np.inf else 0 for min_value in min_values]
-    n_features = start_idx_per_dim[-1]
-    Xt_padded = np.empty((len(Xt), n_features, 3), dtype=float)
+    )
+    for i, diagram in enumerate(diagrams):
+        start_idx = 0
+        for dim in dims:
+            stop_idx = feature_counts[i][dim]  # Current feature size
+            end = sizes[dim]  # Necessary feature size
 
-    for i, dim in enumerate(homology_dimensions):
-        start_idx, end_idx = start_idx_per_dim[i : i + 2]
-        padding_value = min_values[i]
-        # Add dimension as the third elements of each (b, d) tuple globally
-        Xt_padded[:, start_idx:end_idx, 2] = dim
-        for j, diagram in enumerate(Xt):
-            subdiagram = diagram[dim]
-            end_idx_nontrivial = start_idx + len(subdiagram)
-            # Populate nontrivial part of the subdiagram
-            if len(subdiagram) > 0:
-                Xt_padded[j, start_idx:end_idx_nontrivial, :2] = subdiagram
-            # Insert padding triples
-            Xt_padded[j, end_idx_nontrivial:end_idx, :2] = [padding_value] * 2
+            # Input Original Diagram as subdiagram
+            sub_diagram = diagram[start_idx:stop_idx]
+            padded[i, start_idx:stop_idx, :] = sub_diagram
 
-    return Xt_padded
+            # Insert padding
+            padding = np.zeros_like(diagram[: end - stop_idx])
+            # Tag correct dimension
+            padding.T[2] = dim
+            padded[i, stop_idx:end, :] = padding
+
+            start_idx = end
+        return padded

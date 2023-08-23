@@ -120,6 +120,7 @@ class Experiment:
     @timing(mylogger)
     def save_run(self):
         embedding = []
+        # TODO: Maybe just the training set as this determines the fit
         for sample, _ in self.dm.entire_ds:
             mu, log_var = self.model.encode(sample)
             z = self.model.reparameterize(mu, log_var)

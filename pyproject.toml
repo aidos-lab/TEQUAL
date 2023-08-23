@@ -20,6 +20,7 @@ torchvision = "^0.15.2"
 pyyaml = "^6.0.1"
 python-dotenv = "^1.0.0"
 cython = "^3.0.0"
+pandas = "^2.0.3"
 
 
 [build-system]

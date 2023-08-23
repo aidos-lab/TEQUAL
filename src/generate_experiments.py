@@ -14,7 +14,7 @@ from datasets.mnist import MnistDataModule
 
 def configure_datasets():
     """Initilize data sets from `params.yaml`"""
-    data_params = utils.read_parameter_file()["generation_params"]["data_params"]
+    data_params = utils.read_parameter_file()["data_params"]
     datasets = data_params["datasets"]
     DataConfigs = []
     for set in datasets:
@@ -26,7 +26,7 @@ def configure_datasets():
 
 def configure_models():
     """Initilize models from `params.yaml`"""
-    model_params = utils.read_parameter_file()["generation_params"]["model_params"]
+    model_params = utils.read_parameter_file()["model_params"]
     modules = model_params["models"]
     hidden_dims = model_params["hidden_dims"]
     latent_dims = model_params["latent_dims"]
@@ -46,7 +46,7 @@ def configure_models():
 
 
 def configure_trainers():
-    trainer_params = utils.read_parameter_file()["generation_params"]["trainer_params"]
+    trainer_params = utils.read_parameter_file()["trainer_params"]
     learning_rates = trainer_params["lrs"]
     epochs = trainer_params["epochs"]
 
@@ -68,7 +68,7 @@ def generate_experiments() -> None:
     This experiment trains and classifies Autoencoders on the parameters
     and dataset specified in the `params.yaml` file.
     """
-    params = utils.read_parameter_file()["generation_params"]
+    params = utils.read_parameter_file()
     folder = utils.create_experiment_folder()
 
     # Create meta data
