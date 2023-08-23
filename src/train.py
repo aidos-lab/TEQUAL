@@ -132,8 +132,6 @@ class Experiment:
 
 
 def main():
-    if True:
-        print(list(range(2)))
     path = utils.get_experiment_dir()
     experiments = os.listdir(path)
     experiments.sort()

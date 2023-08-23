@@ -1,5 +1,8 @@
-from typing import Any, Protocol
+"Config Files for Datasets, Models, Trainers, etc."
+
 from dataclasses import dataclass, field
+from typing import Any, Protocol
+
 import utils
 
 

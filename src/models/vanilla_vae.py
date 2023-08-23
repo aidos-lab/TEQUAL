@@ -1,10 +1,11 @@
 import torch
-from models import BaseVAE
 from torch import nn
 from torch.nn import functional as F
 
-from loaders.factory import register
 from config import AutoEncoderConfig
+from loaders.factory import register
+from models import BaseVAE
+
 from .types_ import *
 
 
@@ -85,11 +86,8 @@ class VanillaVAE(BaseVAE):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        print(input.shape)
         result = self.encoder(input)
-        print(f"Results: {result.shape}")
         result = torch.flatten(result, start_dim=1)
-        print(f"Flattened Results: {result.shape}")
 
         # Split the result into mu and var components
         # of the latent Gaussian distribution

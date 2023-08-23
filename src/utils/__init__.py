@@ -35,14 +35,14 @@ def read_parameter_file():
 def get_experiment_dir():
     name = read_parameter_file()["experiment"]
     root = project_root_dir()
-    path = os.path.join(root, f"src/experiments/{name}")
+    path = os.path.join(root, f"src/experiments/{name}/configs/")
     return path
 
 
 def create_experiment_folder():
     name = read_parameter_file()["experiment"]
     root = project_root_dir()
-    path = os.path.join(root, f"src/experiments/{name}")
+    path = os.path.join(root, f"src/experiments/{name}/configs/")
     shutil.rmtree(path, ignore_errors=True)
     os.makedirs(path)
     return path
@@ -116,28 +116,27 @@ def gtda_pad(diagrams, dims=(0, 1)):
         sizes[dim] = max(counter)
 
     total_features = sum(sizes.values())
-    padded = np.empty(
+    new_diagrams = np.empty(
         (
             len(diagrams),
             total_features,
             3,
         )
     )
+
     for i, diagram in enumerate(diagrams):
-        start_idx = 0
+
+        start = 0
         for dim in dims:
-            stop_idx = feature_counts[i][dim]  # Current feature size
-            end = sizes[dim]  # Necessary feature size
+            sub_length = start + feature_counts[i][dim]
+            pad_length = start + sizes[dim]
+            sub = diagram[start:sub_length, :]
+            new_diagrams[i, start:sub_length, :] = sub
 
-            # Input Original Diagram as subdiagram
-            sub_diagram = diagram[start_idx:stop_idx]
-            padded[i, start_idx:stop_idx, :] = sub_diagram
-
-            # Insert padding
-            padding = np.zeros_like(diagram[: end - stop_idx])
-            # Tag correct dimension
-            padding.T[2] = dim
-            padded[i, stop_idx:end, :] = padding
-
-            start_idx = end
-        return padded
+            padding = np.zeros(
+                shape=(1, pad_length - sub_length, 3),
+            )
+            padding[:, :, 2:] = int(dim)
+            new_diagrams[i, sub_length:pad_length, :] = padding
+            start = pad_length
+    return new_diagrams

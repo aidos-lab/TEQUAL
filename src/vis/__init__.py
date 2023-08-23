@@ -24,10 +24,10 @@ def visualize_embeddings(T: TEQUAL):
     fig = make_subplots(
         rows=num_rows,
         cols=num_cols,
-        column_titles=list(map(str, architechtures)),
-        x_title="Hidden Dims",
-        row_titles=None,
-        y_title="Training Params",
+        column_titles=None,
+        x_title="Training Params",
+        row_titles=list(map(str, architechtures)),
+        y_title="Hidden Dims",
     )
 
     row = 1

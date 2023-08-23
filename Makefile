@@ -1,10 +1,14 @@
-all: generate
-	@echo "Training Models"
-	@poetry run python src/main.py
+all: setup train quotient
+	
 
-generate: 
+setup: 
 	@echo "Generating Experiments"
-	@poetry run python src/generate_experiments.py
+	@poetry run python src/setup.py
 
-analyze:
-	@echo "Computing Persistent Homology"
+train: 
+	@echo "Training Models"
+	@poetry run python src/train.py
+
+quotient:
+	@echo "Computing Topological Quotients"
+	@poetry run python src/quotient.py

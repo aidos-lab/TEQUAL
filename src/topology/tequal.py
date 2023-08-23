@@ -7,6 +7,7 @@ from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import pairwise_distances
 
 import utils
+from loggers.logger import Logger
 
 
 class TEQUAL:
@@ -19,6 +20,7 @@ class TEQUAL:
         self.diagrams = None
         self.distance_relation = None
         self.eq_relation = None
+        self.logger = Logger
 
     def generate_diagrams(self):
         diagrams = []
@@ -27,7 +29,9 @@ class TEQUAL:
                 diagram = np.squeeze(self.alpha.fit_transform(X))
                 diagrams.append(diagram)
             except ValueError:
-                print("TRAINING ERROR: NaNs in the latent space representation")
+                self.logger.log(
+                    "TRAINING ERROR: NaNs in the latent space representation"
+                )
         self.diagrams = diagrams
         return self.diagrams
 

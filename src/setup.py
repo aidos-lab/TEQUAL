@@ -1,11 +1,8 @@
 import itertools
 
-from omegaconf import OmegaConf
-
 import config
 import utils
 from config import *
-from datasets.mnist import MnistDataModule
 
 #  ╭──────────────────────────────────────────────────────────╮
 #  │Helper Methods                                            │
@@ -93,13 +90,3 @@ def generate_experiments() -> None:
 
 if __name__ == "__main__":
     generate_experiments()
-
-    # Testing
-    # cfg = OmegaConf.load(
-    #     "/Users/jeremy.wayland/Desktop/projects/TEQUAL/src/generation/experiments/testing_refactor_loop/config_1.yaml"
-    # )
-    # dm = loader.load_module("dataset", cfg.data)
-    # test_embedding = []
-    # for X, _ in dm.entire_ds:
-    #     test_embedding.append(X[0])
-    # utils.save_embedding(test_embedding, cfg)
