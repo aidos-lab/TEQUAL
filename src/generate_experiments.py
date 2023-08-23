@@ -1,11 +1,11 @@
 import itertools
 
+from omegaconf import OmegaConf
+
 import config
-import loaders.factory as loader
 import utils
 from config import *
 from datasets.mnist import MnistDataModule
-from omegaconf import OmegaConf
 
 #  ╭──────────────────────────────────────────────────────────╮
 #  │Helper Methods                                            │
@@ -29,14 +29,13 @@ def configure_models():
     model_params = utils.read_parameter_file()["generation_params"]["model_params"]
     modules = model_params["models"]
     hidden_dims = model_params["hidden_dims"]
-    latent_dim = model_params["latent_dim"]
+    latent_dims = model_params["latent_dims"]
 
-    # Get Number of Classes
-
-    models = list(itertools.product(modules, hidden_dims))
+    # Model Space
+    models = list(itertools.product(modules, hidden_dims, latent_dims))
     ModelConfigs = []
-    for (module, hidden_dims) in models:
-        # TODO: Read in a specific Config class here
+    # Enumerate Model Configs
+    for (module, hidden_dims, latent_dim) in models:
         cfg = AutoEncoderConfig(
             module=module,
             hidden_dims=hidden_dims,
@@ -83,7 +82,11 @@ def generate_experiments() -> None:
 
     # Initialize Experiments
     for i, (model, data, trainer) in enumerate(experiments):
-        meta = Meta(params["meta"], i)
+        meta = Meta(
+            name=params["experiment"],
+            id=i,
+            description=params["description"],
+        )
         config = Config(meta, data, model, trainer)
         utils.save_config(config, folder, filename=f"config_{i}.yaml")
 

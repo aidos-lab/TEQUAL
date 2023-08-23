@@ -8,72 +8,50 @@ from config import AutoEncoderConfig
 from .types_ import *
 
 
-class VanillaVAE(BaseVAE):
+class TestVAE(BaseVAE):
     def __init__(self, config) -> None:
-        super(VanillaVAE, self).__init__(config)
+        super(TestVAE, self).__init__(config)
         self.latent_dim = self.config.latent_dim
         self.hidden_dims = self.config.hidden_dims
         self.in_channels = self.config.in_channels
+        self.img_size = self.config.img_size
+
         modules = []
 
-        # Build Encoder
+        # Build Encoder Architechture
+        in_features = self.img_size
         for h_dim in self.hidden_dims:
             modules.append(
                 nn.Sequential(
-                    nn.Conv2d(
-                        in_channels=self.in_channels,
-                        out_channels=h_dim,
-                        kernel_size=3,
-                        stride=2,
-                        padding=1,
-                    ),
-                    nn.BatchNorm2d(h_dim),
-                    nn.LeakyReLU(),
+                    nn.Linear(in_features, h_dim),
                 )
             )
-            self.in_channels = h_dim
-
+            in_features = h_dim
         self.encoder = nn.Sequential(*modules)
-        self.fc_mu = nn.Linear(self.hidden_dims[-1], self.latent_dim)
-        self.fc_var = nn.Linear(self.hidden_dims[-1], self.latent_dim)
+
+        self.N = torch.distributions.Normal(0, 1)
+        self.kl = 0
+
+        # VAE Layers
+        self.fc_mu = nn.Linear(in_features, self.latent_dim)
+        self.fc_var = nn.Linear(in_features, self.latent_dim)
 
         # Build Decoder
+        self.hidden_dims.reverse()
         modules = []
 
-        self.decoder_input = nn.Linear(self.latent_dim, self.hidden_dims[-1])
-
-        self.hidden_dims.reverse()
-
-        for i in range(len(self.hidden_dims) - 1):
+        in_features = self.latent_dim
+        for h_dim in self.hidden_dims:
             modules.append(
                 nn.Sequential(
-                    nn.ConvTranspose2d(
-                        self.hidden_dims[i],
-                        self.hidden_dims[i + 1],
-                        kernel_size=3,
-                        stride=2,
-                        padding=1,
-                        output_padding=1,
-                    ),
-                    nn.BatchNorm2d(self.hidden_dims[i + 1]),
-                    nn.LeakyReLU(),
+                    nn.Linear(in_features, h_dim),
                 )
             )
-
+            in_features = h_dim
         self.decoder = nn.Sequential(*modules)
 
         self.final_layer = nn.Sequential(
-            nn.ConvTranspose2d(
-                self.hidden_dims[-1],
-                self.hidden_dims[-1],
-                kernel_size=3,
-                stride=2,
-                padding=1,
-                output_padding=1,
-            ),
-            nn.BatchNorm2d(self.hidden_dims[-1]),
-            nn.LeakyReLU(),
-            nn.Conv2d(self.hidden_dims[-1], out_channels=3, kernel_size=3, padding=1),
+            nn.Linear(in_features, self.img_size),
             nn.Tanh(),
         )
 
@@ -84,13 +62,14 @@ class VanillaVAE(BaseVAE):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        result = self.encoder(input)
-        result = torch.flatten(result, start_dim=1)
+
+        x = torch.flatten(input, start_dim=1)
+        z = self.encoder(x)
 
         # Split the result into mu and var components
         # of the latent Gaussian distribution
-        mu = self.fc_mu(result)
-        log_var = self.fc_var(result)
+        mu = self.fc_mu(z)
+        log_var = self.fc_var(z)
 
         return [mu, log_var]
 
@@ -101,10 +80,9 @@ class VanillaVAE(BaseVAE):
         :param z: (Tensor) [B x D]
         :return: (Tensor) [B x C x H x W]
         """
-        result = self.decoder_input(z)
-        result = result.view(-1, 512, 2, 2)
-        result = self.decoder(result)
-        result = self.final_layer(result)
+        x = self.decoder(z)
+        result = self.final_layer(x)
+        result.view((-1, 1, 28, 28))
         return result
 
     def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
@@ -119,10 +97,26 @@ class VanillaVAE(BaseVAE):
         eps = torch.randn_like(std)
         return eps * std + mu
 
-    def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
+    def sample(self, num_samples: int, current_device: int, **kwargs) -> Tensor:
+        """
+        Samples from the latent space and return the corresponding
+        image space map.
+        :param num_samples: (Int) Number of samples
+        :param current_device: (Int) Device to run the model
+        :return: (Tensor)
+        """
+        z = torch.randn(num_samples, self.latent_dim)
+
+        z = z.to(current_device)
+
+        samples = self.decode(z)
+        return samples
+
+    def forward(self, input: Tensor, **kwargs) -> Tensor:
         mu, log_var = self.encode(input)
         z = self.reparameterize(mu, log_var)
-        return [self.decode(z), input, mu, log_var]
+        # [self.decode(z), input, mu, log_var]
+        return self.decode(z)
 
     def loss_function(self, *args, **kwargs) -> dict:
         """
@@ -151,30 +145,6 @@ class VanillaVAE(BaseVAE):
             "KLD": -kld_loss.detach(),
         }
 
-    def sample(self, num_samples: int, current_device: int, **kwargs) -> Tensor:
-        """
-        Samples from the latent space and return the corresponding
-        image space map.
-        :param num_samples: (Int) Number of samples
-        :param current_device: (Int) Device to run the model
-        :return: (Tensor)
-        """
-        z = torch.randn(num_samples, self.latent_dim)
-
-        z = z.to(current_device)
-
-        samples = self.decode(z)
-        return samples
-
-    def generate(self, x: Tensor, **kwargs) -> Tensor:
-        """
-        Given an input image x, returns the reconstructed image
-        :param x: (Tensor) [B x C x H x W]
-        :return: (Tensor) [B x C x H x W]
-        """
-
-        return self.forward(x)[0]
-
 
 def initialize():
-    register("model", VanillaVAE)
+    register("model", TestVAE)

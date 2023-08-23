@@ -20,6 +20,7 @@ class Config:
 class Meta:
     name: str
     id: int
+    description: str
     project: str = "TEQUAL2023"
     tags: list[str] = field(default_factory=list)
 
@@ -40,6 +41,7 @@ class AutoEncoderConfig:
     module: str = "models.base"
     # Set Model Architechture
     in_channels: int = 1
+    img_size: int = 28 * 28
     hidden_dims: list = field(default_factory=list)
     latent_dim: int = 2
 

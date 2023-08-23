@@ -27,10 +27,10 @@ def compute_acc(model, loader, loss_fn):
     y_pred = []
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     with torch.no_grad():
-        for X, y in loader:
-            batch_gpu, y_gpu = X.to(device), y.to(device)
-            y_pred.append(model(batch_gpu))
-            y_true.append(batch_gpu)
+        for x, y in loader:
+            X = torch.flatten(x, start_dim=1)
+            y_pred.append(model(X))
+            y_true.append(X)
         y_true = torch.cat(y_true)
         y_pred = torch.cat(y_pred)
         loss = loss_fn(y_pred, y_true)

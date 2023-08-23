@@ -1,16 +1,14 @@
+import os
+import time
+
+import numpy as np
 import torch
 from omegaconf import OmegaConf
-import os
-
-from generate_experiments import generate_experiments
-
-import utils
-
-from loggers.logger import Logger, timing
-from metrics.metrics import compute_confusion, compute_acc
 
 import loaders.factory as loader
-import time
+import utils
+from loggers.logger import Logger, timing
+from metrics.metrics import compute_acc, compute_confusion
 
 torch.cuda.empty_cache()
 
@@ -71,18 +69,17 @@ class Experiment:
                 )
                 start = time.time()
 
-        self.finalize_run()
+        # self.finalize_run()
 
     def run_epoch(self):
         for batch_idx, (x, y) in enumerate(self.dm.train_dataloader()):
-            batch_gpu, _ = x.to(self.device), y.to(self.device)
+            X, _ = x.to(self.device), y.to(self.device)
 
+            X = torch.flatten(X, start_dim=1)
             self.optimizer.zero_grad(set_to_none=True)
-            results = self.model(batch_gpu, labels=y)
-            pred = results[0]
-            print("First Prediction:")
+            result = self.model(X)
 
-            loss = self.loss_fn(pred, batch_gpu)
+            loss = self.loss_fn(result, X)
             # loss = self.model.loss_function(
             #     *results,
             #     batch_gpu,
@@ -120,22 +117,28 @@ class Experiment:
             params={"epoch": epoch, "val_loss": loss.item(), "val_acc": acc},
         )
 
+    @timing(mylogger)
     def save_run(self):
         embedding = []
         for sample, _ in self.dm.entire_ds:
-            x = self.model.encode(sample)
-            embedding.append(x)
+            mu, log_var = self.model.encode(sample)
+            z = self.model.reparameterize(mu, log_var)
+            embedding.append(z.detach().numpy())
 
+        embedding = np.array(embedding)
         # Save array as Pickle
         utils.save_embedding(embedding, self.config)
 
 
 def main():
-    path = utils.get_experiment_path()
+    if True:
+        print(list(range(2)))
+    path = utils.get_experiment_dir()
     experiments = os.listdir(path)
+    experiments.sort()
     for cfg in experiments:
+        print(f"Starting experiments for: {cfg}")
         file = os.path.join(path, cfg)
-        print(f"Starting experiments for :{file}")
         exp = Experiment(file, logger=mylogger, dev=True)
         exp.run()
         exp.save_run()
