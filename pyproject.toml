@@ -9,7 +9,6 @@ readme = "README.md"
 python = "^3.9"
 torch-geometric = "^2.3.1"
 numpy = "^1.25.2"
-ripser = "^0.6.4"
 giotto-tda = "^0.6.0"
 sklearn = "^0.0.post7"
 wandb = "^0.15.8"
@@ -23,6 +22,7 @@ cython = "^3.0.0"
 pandas = "^2.0.3"
 nbformat = "^5.9.2"
 shyaml = "^0.6.2"
+matplotlib = "^3.7.2"
 
 
 [tool.poetry.group.dev.dependencies]

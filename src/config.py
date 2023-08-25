@@ -57,7 +57,7 @@ class AutoEncoderConfig:
 class DataModuleConfig(Protocol):
     module: str
     data_dir: str = f"{utils.project_root_dir()}" + "data/"
-    num_workers: int = 0
+    num_workers: int = 4
     batch_size: int = 64
     pin_memory: bool = False
 

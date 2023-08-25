@@ -19,7 +19,7 @@ def visualize_embeddings(T: TEQUAL, labels) -> go.Figure:
     N = len(T.point_clouds)
     params = utils.read_parameter_file()
 
-    architechtures = params.model_params.hidden_dims
+    architechtures = params.data_params.batch_sizes
     num_cols = len(architechtures)
     num_rows = int(N / num_cols)
 
@@ -27,7 +27,7 @@ def visualize_embeddings(T: TEQUAL, labels) -> go.Figure:
         rows=num_rows,
         cols=num_cols,
         column_titles=list(map(str, architechtures)),
-        x_title="Hidden Dims",
+        x_title="Batch Sizes",
         row_titles=None,
         y_title="Training Params",
         subplot_titles=(),
@@ -38,7 +38,7 @@ def visualize_embeddings(T: TEQUAL, labels) -> go.Figure:
     for i, embedding in enumerate(T.point_clouds):
         data = np.squeeze(embedding)
         df = pd.DataFrame(data, columns=["x", "y"])
-        sample_size = int(len(df) / 2)
+        sample_size = int(len(df) / 5)
         # Sampling for plotly outputs
         sub_df = df.sample(n=sample_size)
         df["labels"] = labels[i]
@@ -49,7 +49,7 @@ def visualize_embeddings(T: TEQUAL, labels) -> go.Figure:
                 mode="markers",
                 opacity=0.4,
                 marker=dict(
-                    size=2,
+                    size=3,
                     color=df["labels"],
                     colorscale="jet",
                 ),
@@ -63,7 +63,6 @@ def visualize_embeddings(T: TEQUAL, labels) -> go.Figure:
             col += 1
 
     fig.update_layout(
-        height=2000,
         width=2000,
         template="simple_white",
         showlegend=False,
