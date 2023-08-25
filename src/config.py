@@ -44,7 +44,6 @@ class AutoEncoderConfig:
     module: str = "models.base"
     # Set Model Architechture
     in_channels: int = 1
-    img_size: int = 28 * 28
     hidden_dims: list = field(default_factory=list)
     latent_dim: int = 2
 
@@ -57,7 +56,7 @@ class AutoEncoderConfig:
 @dataclass
 class DataModuleConfig(Protocol):
     module: str
-    data_dir: str = f"{utils.project_root_dir()}" + "data"
+    data_dir: str = f"{utils.project_root_dir()}" + "data/"
     num_workers: int = 0
     batch_size: int = 64
     pin_memory: bool = False
@@ -71,6 +70,16 @@ class MnistConfig(DataModuleConfig):
     in_channels: int = 1
     img_size: int = 28
     num_classes: int = 10
+
+
+@dataclass
+class XycConfig(DataModuleConfig):
+    module: str = "datasets.xyc"
+    name: str = "XYC"
+    batch_size: int = 64
+    in_channels: int = 1
+    img_size: int = 84
+    num_classes: int = 3
 
 
 #  ╭──────────────────────────────────────────────────────────╮

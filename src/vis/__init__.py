@@ -11,23 +11,26 @@ from scipy.spatial.distance import squareform
 import utils
 from topology.tequal import TEQUAL
 
+pio.renderers.default = "chrome"
 
-def visualize_embeddings(T: TEQUAL):
+
+def visualize_embeddings(T: TEQUAL) -> go.Figure:
 
     N = len(T.point_clouds)
     params = utils.read_parameter_file()
 
     architechtures = params.model_params.hidden_dims
-    num_rows = len(architechtures)
-    num_cols = int(N / num_rows)
+    num_cols = len(architechtures)
+    num_rows = int(N / num_cols)
 
     fig = make_subplots(
         rows=num_rows,
         cols=num_cols,
-        column_titles=None,
-        x_title="Training Params",
-        row_titles=list(map(str, architechtures)),
-        y_title="Hidden Dims",
+        column_titles=list(map(str, architechtures)),
+        x_title="Hidden Dims",
+        row_titles=None,
+        y_title="Training Params",
+        subplot_titles=(),
     )
 
     row = 1
@@ -35,12 +38,21 @@ def visualize_embeddings(T: TEQUAL):
     for embedding in T.point_clouds:
 
         df = pd.DataFrame(np.squeeze(embedding), columns=["x", "y"])
+        sample_size = int(len(df) / 2)
+        # Sampling for plotly outputs
+        sub_df = df.sample(n=sample_size)
         # df["labels"] = labels
         fig.add_trace(
             go.Scatter(
-                x=df["x"],
-                y=df["y"],
+                x=sub_df["x"],
+                y=sub_df["y"],
                 mode="markers",
+                opacity=0.4,
+                marker=dict(
+                    size=2,
+                    color=df["labels"],
+                    colorscale="jet",
+                ),
             ),
             row=row,
             col=col,
@@ -51,7 +63,8 @@ def visualize_embeddings(T: TEQUAL):
             col += 1
 
     fig.update_layout(
-        # height=900,
+        height=2000,
+        width=2000,
         template="simple_white",
         showlegend=False,
         font=dict(color="black"),

@@ -2,9 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from gtda.diagrams import PairwiseDistance
 from gtda.homology import WeakAlphaPersistence
-from scipy.cluster.hierarchy import dendrogram
 from sklearn.cluster import AgglomerativeClustering
-from sklearn.metrics import pairwise_distances
 
 import utils
 from loggers.logger import Logger
@@ -69,26 +67,3 @@ class TEQUAL:
     def summary(self):
         """Dendrogram height filtration"""
         pass
-
-    # def plot_dendrogram(self, epsilon, **kwargs):
-    #     if self.eq_relation is None:
-    #         self.quotient(epsilon)
-    #     counts = np.zeros(self.eq_relation.children_.shape[0])
-    #     n_samples = len(self.eq_relation.labels_)
-    #     for i, merge in enumerate(self.eq_relation.children_):
-    #         current_count = 0
-    #         for child_idx in merge:
-    #             if child_idx < n_samples:
-    #                 current_count += 1  # leaf node
-    #             else:
-    #                 current_count += counts[child_idx - n_samples]
-    #         counts[i] = current_count
-
-    #     linkage_matrix = np.column_stack(
-    #         [self.eq_relation.children_, self.eq_relation.distances_, counts]
-    #     ).astype(float)
-
-    #     # Plot the corresponding dendrogram
-    #     fig = dendrogram(linkage_matrix, **kwargs)
-    #     plt.show()
-    #     return fig

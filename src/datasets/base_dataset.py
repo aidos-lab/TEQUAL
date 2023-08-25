@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from torch_geometric.loader import DataLoader, ImbalancedSampler
-from torch_geometric.data import Dataset
-import torch
-
-from typing import Protocol
 from dataclasses import dataclass
+from typing import Protocol
+
+import torch
+from torch_geometric.data import Dataset
+from torch_geometric.loader import DataLoader, ImbalancedSampler
+
 from config import DataModuleConfig
 
 
@@ -68,6 +69,15 @@ class DataModule(ABC):
             batch_size=self.config.batch_size,
             num_workers=self.config.num_workers,
             # sampler = ImbalancedSampler(self.test_ds),
+            shuffle=False,
+            pin_memory=self.config.pin_memory,
+        )
+
+    def full_dataloader(self) -> DataLoader:
+        return DataLoader(
+            self.entire_ds,
+            batch_size=len(self.entire_ds),
+            num_workers=self.config.num_workers,
             shuffle=False,
             pin_memory=self.config.pin_memory,
         )

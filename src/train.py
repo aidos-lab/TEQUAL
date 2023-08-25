@@ -29,11 +29,14 @@ class Experiment:
         self.logger = logger
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        self.logger.log("Setup")
+        # self.logger.log("Setup")
         self.logger.wandb_init(self.config.meta)
 
         # Load the dataset
         self.dm = loader.load_module("dataset", self.config.data)
+
+        # Set model input size
+        self.config.model.img_size = self.config.data.img_size
 
         # Load the model
         model = loader.load_module("model", self.config.model)
@@ -42,15 +45,7 @@ class Experiment:
         self.model = model.to(self.device)
 
         # Loss function and optimizer.
-        self.loss_fn = torch.nn.MSELoss()
-        # self.loss_fn = torch.nn.CrossEntropyLoss()
-
         self.optimizer = torch.optim.Adam(model.parameters(), lr=self.config.trainer.lr)
-
-        # Log info
-        self.logger.log(
-            f"{self.config.model.module} has {utils.count_parameters(self.model)} trainable parameters"
-        )
 
     @timing(mylogger)
     def run(self):
@@ -63,7 +58,7 @@ class Experiment:
 
             if epoch % 10 == 0:
                 end = time.time()
-                self.compute_metrics(epoch)
+                # self.compute_metrics(epoch)
                 self.logger.log(
                     msg=f"Training the model 10 epochs took: {end - start:.2f} seconds."
                 )
@@ -75,17 +70,15 @@ class Experiment:
         for batch_idx, (x, y) in enumerate(self.dm.train_dataloader()):
             X, _ = x.to(self.device), y.to(self.device)
 
-            X = torch.flatten(X, start_dim=1)
             self.optimizer.zero_grad(set_to_none=True)
-            result = self.model(X)
+            results = self.model(X)
 
-            loss = self.loss_fn(result, X)
-            # loss = self.model.loss_function(
-            #     *results,
-            #     batch_gpu,
-            #     batch_idx=batch_idx,
-            #     M_N=0.00025,
-            # )
+            stats = self.model.loss_function(
+                *results,
+                batch_idx=batch_idx,
+                M_N=0.00025,
+            )
+            loss = stats["loss"]
             loss.backward()
 
             self.optimizer.step()
@@ -119,16 +112,15 @@ class Experiment:
 
     @timing(mylogger)
     def save_run(self):
-        embedding = []
-        # TODO: Maybe just the training set as this determines the fit
-        for sample, _ in self.dm.entire_ds:
-            mu, log_var = self.model.encode(sample)
-            z = self.model.reparameterize(mu, log_var)
-            embedding.append(z.detach().numpy())
 
-        embedding = np.array(embedding)
+        # Save training or full?
+        for train_data, train_labels in self.dm.full_dataloader():
+            embedding = self.model.latent(train_data).detach().numpy()
+            results = {"embedding": embedding, "labels": train_labels}
+
         # Save array as Pickle
-        utils.save_embedding(embedding, self.config)
+        utils.save_embedding(results, self.config)
+        self.logger.log(msg=f"Embedding Size: {embedding.shape}.")
 
 
 def main():
@@ -136,11 +128,19 @@ def main():
     experiments = os.listdir(path)
     experiments.sort()
     for cfg in experiments:
-        print(f"Starting experiments for: {cfg}")
         file = os.path.join(path, cfg)
         exp = Experiment(file, logger=mylogger, dev=True)
+        # Logging
+        exp.logger.log(msg=f"Starting Experiments for {cfg}")
+        exp.logger.log(
+            msg=f"{exp.config.model.module} training on {exp.config.data.module}:  "
+        )
+        exp.logger.log(f"{utils.count_parameters(exp.model)} trainable parameters")
+
+        # Execute Experiment
         exp.run()
         exp.save_run()
+        print()
 
 
 if __name__ == "__main__":

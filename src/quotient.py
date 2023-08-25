@@ -22,7 +22,10 @@ if __name__ == "__main__":
     for (dataset, model) in combos:
         embeddings = utils.fetch_embeddings(dataset, model)
         T = TEQUAL(data=embeddings)
-        T.quotient(epsilon=0.01)
+        diagrams = T.generate_diagrams()
+        for diagram in diagrams:
+            print(len(diagrams))
+        T.quotient(epsilon)
 
         embedding_grid = vis.visualize_embeddings(T)
         dendrogram, colormap = vis.visualize_dendrogram(T)
