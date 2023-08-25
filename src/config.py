@@ -52,7 +52,7 @@ class AutoEncoderConfig:
 #  │ Data Configurations                                      │
 #  ╰──────────────────────────────────────────────────────────╯
 
-
+# Defaults
 @dataclass
 class DataModuleConfig(Protocol):
     module: str
@@ -66,7 +66,6 @@ class DataModuleConfig(Protocol):
 class MnistConfig(DataModuleConfig):
     module: str = "datasets.mnist"
     name: str = "MNIST"
-    batch_size: int = 64
     in_channels: int = 1
     img_size: int = 28
     num_classes: int = 10
@@ -76,7 +75,6 @@ class MnistConfig(DataModuleConfig):
 class XycConfig(DataModuleConfig):
     module: str = "datasets.xyc"
     name: str = "XYC"
-    batch_size: int = 64
     in_channels: int = 1
     img_size: int = 84
     num_classes: int = 3

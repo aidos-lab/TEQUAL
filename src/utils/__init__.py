@@ -83,18 +83,19 @@ def get_embeddings_dir(dataset: str, model: str):
 def fetch_embeddings(dataset, model) -> list:
     dir = get_embeddings_dir(dataset, model)
     embeddings = []
+    labels = []
     files = os.listdir(dir)
     files.sort()
     for file in files:
         file = os.path.join(dir, file)
         with open(file, "rb") as f:
-            embedding = pickle.load(f)["embedding"]
-        embeddings.append(embedding)
-    return embeddings
+            data = pickle.load(f)
+        embeddings.append(data["embedding"])
+        labels.append(data["labels"])
+    return embeddings, labels
 
 
 def gtda_reshape(embedding):
-    print(len(embedding))
     X = np.squeeze(np.array(embedding))
     return X.reshape(1, *X.shape)
 

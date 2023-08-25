@@ -20,14 +20,12 @@ if __name__ == "__main__":
     max_dim = 1
 
     for (dataset, model) in combos:
-        embeddings = utils.fetch_embeddings(dataset, model)
+        embeddings, labels = utils.fetch_embeddings(dataset, model)
         T = TEQUAL(data=embeddings)
         diagrams = T.generate_diagrams()
-        for diagram in diagrams:
-            print(len(diagrams))
         T.quotient(epsilon)
 
-        embedding_grid = vis.visualize_embeddings(T)
+        embedding_grid = vis.visualize_embeddings(T, labels)
         dendrogram, colormap = vis.visualize_dendrogram(T)
 
         experiment = utils.get_experiment_dir()

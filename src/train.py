@@ -1,7 +1,6 @@
 import os
 import time
 
-import numpy as np
 import torch
 from omegaconf import OmegaConf
 
@@ -115,8 +114,11 @@ class Experiment:
 
         # Save training or full?
         for train_data, train_labels in self.dm.full_dataloader():
+
             embedding = self.model.latent(train_data).detach().numpy()
-            results = {"embedding": embedding, "labels": train_labels}
+            labels = train_labels.detach().numpy()
+
+            results = {"embedding": embedding, "labels": labels}
 
         # Save array as Pickle
         utils.save_embedding(results, self.config)
@@ -133,7 +135,7 @@ def main():
         # Logging
         exp.logger.log(msg=f"Starting Experiments for {cfg}")
         exp.logger.log(
-            msg=f"{exp.config.model.module} training on {exp.config.data.module}:  "
+            msg=f"{exp.config.model.module} training on {exp.config.data.module}"
         )
         exp.logger.log(f"{utils.count_parameters(exp.model)} trainable parameters")
 

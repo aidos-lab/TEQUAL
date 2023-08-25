@@ -12,11 +12,16 @@ from config import *
 def configure_datasets():
     """Initilize data sets from `params.yaml`"""
     data_params = utils.read_parameter_file()["data_params"]
-    datasets = data_params["datasets"]
+    sets = data_params["datasets"]
+    batch_sizes = data_params["batch_sizes"]
+
+    datasets = list(itertools.product(sets, batch_sizes))
+
     DataConfigs = []
-    for set in datasets:
+    for set, batch_size in datasets:
         class_name = utils.load_data_reference()[set]
         cfg = getattr(config, class_name)
+        cfg.batch_size = batch_size
         DataConfigs.append(cfg)
     return DataConfigs
 
@@ -25,6 +30,7 @@ def configure_models():
     """Initilize models from `params.yaml`"""
     model_params = utils.read_parameter_file()["model_params"]
     modules = model_params["models"]
+
     hidden_dims = model_params["hidden_dims"]
     latent_dims = model_params["latent_dims"]
 
