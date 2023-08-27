@@ -21,8 +21,7 @@ def configure_datasets():
     for set, batch_size in datasets:
         class_name = utils.load_data_reference()[set]
         cfg = getattr(config, class_name)
-        cfg.batch_size = batch_size
-        DataConfigs.append(cfg)
+        DataConfigs.append(cfg(batch_size=batch_size))
     return DataConfigs
 
 
