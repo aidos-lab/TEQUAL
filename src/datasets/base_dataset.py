@@ -51,6 +51,7 @@ class DataModule(ABC):
             # sampler = ImbalancedSampler(self.train_ds),
             shuffle=False,
             pin_memory=self.config.pin_memory,
+            multiprocessing_context="fork",
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -61,6 +62,7 @@ class DataModule(ABC):
             # sampler = ImbalancedSampler(self.val_ds),
             shuffle=False,
             pin_memory=self.config.pin_memory,
+            multiprocessing_context="fork",
         )
 
     def test_dataloader(self) -> DataLoader:
@@ -71,6 +73,7 @@ class DataModule(ABC):
             # sampler = ImbalancedSampler(self.test_ds),
             shuffle=False,
             pin_memory=self.config.pin_memory,
+            multiprocessing_context="fork",
         )
 
     def full_dataloader(self) -> DataLoader:
@@ -80,6 +83,7 @@ class DataModule(ABC):
             num_workers=self.config.num_workers,
             shuffle=False,
             pin_memory=self.config.pin_memory,
+            multiprocessing_context="fork",
         )
 
     def info(self):
