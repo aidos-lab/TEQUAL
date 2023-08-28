@@ -14,7 +14,7 @@ from topology.tequal import TEQUAL
 pio.renderers.default = "chrome"
 
 
-def visualize_embeddings(T: TEQUAL, labels) -> go.Figure:
+def visualize_embeddings(T: TEQUAL) -> go.Figure:
 
     N = len(T.point_clouds)
     params = utils.read_parameter_file()
@@ -41,7 +41,7 @@ def visualize_embeddings(T: TEQUAL, labels) -> go.Figure:
         sample_size = int(len(df) / 5)
         # Sampling for plotly outputs
         sub_df = df.sample(n=sample_size)
-        df["labels"] = labels[i]
+        df["labels"] = T.labels[i]
         fig.add_trace(
             go.Scatter(
                 x=sub_df["x"],

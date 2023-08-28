@@ -23,12 +23,11 @@ if __name__ == "__main__":
 
     for (dataset, model) in combos:
         embeddings, labels = utils.fetch_embeddings(dataset, model)
-        T = TEQUAL(data=embeddings, max_dim=max_dim)
-
+        T = TEQUAL(data=embeddings, labels=labels, max_dim=max_dim)
         T.generate_diagrams()
 
         T.quotient(epsilon)
-        embedding_grid = vis.visualize_embeddings(T, labels)
+        embedding_grid = vis.visualize_embeddings(T)
         dendrogram, colormap = vis.visualize_dendrogram(T)
         experiment = utils.get_experiment_dir()
         out_dir = os.path.join(experiment, f"../results/{dataset}/")

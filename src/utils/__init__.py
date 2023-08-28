@@ -80,6 +80,18 @@ def get_embeddings_dir(dataset: str, model: str):
     return path
 
 
+def remove_duplicates(data):
+    original_X = data["embedding"]
+    original_labels = data["labels"]
+
+    assert len(original_labels) == len(original_X), "MISMATCH"
+    # Remove Duplicates
+    clean_X, mask = np.unique(original_X, axis=0, return_index=True)
+    clean_labels = original_labels[mask]
+
+    return clean_X, clean_labels
+
+
 def fetch_embeddings(dataset, model) -> list:
     dir = get_embeddings_dir(dataset, model)
     embeddings = []
@@ -90,13 +102,14 @@ def fetch_embeddings(dataset, model) -> list:
         file = os.path.join(dir, file)
         with open(file, "rb") as f:
             data = pickle.load(f)
-        embeddings.append(data["embedding"])
-        labels.append(data["labels"])
+            X, y = remove_duplicates(data)
+        embeddings.append(X)
+        labels.append(y)
     return embeddings, labels
 
 
-def gtda_reshape(embedding):
-    return embedding.reshape(1, *embedding.shape)
+def gtda_reshape(X):
+    return X.reshape(1, *X.shape)
 
 
 def gtda_pad(diagrams, dims=(0, 1)):
