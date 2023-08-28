@@ -1,14 +1,12 @@
-from typing import Callable, Any
 import importlib
-from typing import Callable, Any
 from pydoc import locate
+from typing import Any, Callable
 
 creation_funcs = {}
 
 
 def register(name: str, module):
     """Register modules such as datasets and models"""
-    print("Registerd")
     creation_funcs[name] = module
 
 

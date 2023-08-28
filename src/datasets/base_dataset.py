@@ -1,21 +1,14 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from torch_geometric.loader import DataLoader, ImbalancedSampler
-from torch_geometric.data import Dataset
-import torch
-
-from typing import Protocol
 from dataclasses import dataclass
+from typing import Protocol
 
+import torch
+from torch_geometric.data import Dataset
+from torch_geometric.loader import DataLoader, ImbalancedSampler
 
-@dataclass
-class DataModuleConfig(Protocol):
-    module: str
-    root: str = "./data"
-    num_workers: int = 0
-    batch_size: int = 64
-    pin_memory: bool = True
+from config import DataModuleConfig
 
 
 class DataModule(ABC):
@@ -46,7 +39,9 @@ class DataModule(ABC):
         if self.train_ds and self.test_ds and self.val_ds:
             return
 
-        self.train_ds, self.test_ds, self.val_ds = torch.utils.data.random_split(self.entire_ds, [0.4, 0.3, 0.3])
+        self.train_ds, self.test_ds, self.val_ds = torch.utils.data.random_split(
+            self.entire_ds, [0.4, 0.3, 0.3]
+        )
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(
@@ -56,6 +51,7 @@ class DataModule(ABC):
             # sampler = ImbalancedSampler(self.train_ds),
             shuffle=False,
             pin_memory=self.config.pin_memory,
+            multiprocessing_context="fork",
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -66,6 +62,7 @@ class DataModule(ABC):
             # sampler = ImbalancedSampler(self.val_ds),
             shuffle=False,
             pin_memory=self.config.pin_memory,
+            multiprocessing_context="fork",
         )
 
     def test_dataloader(self) -> DataLoader:
@@ -76,6 +73,17 @@ class DataModule(ABC):
             # sampler = ImbalancedSampler(self.test_ds),
             shuffle=False,
             pin_memory=self.config.pin_memory,
+            multiprocessing_context="fork",
+        )
+
+    def full_dataloader(self) -> DataLoader:
+        return DataLoader(
+            self.entire_ds,
+            batch_size=len(self.entire_ds),
+            num_workers=self.config.num_workers,
+            shuffle=False,
+            pin_memory=self.config.pin_memory,
+            multiprocessing_context="fork",
         )
 
     def info(self):

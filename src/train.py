@@ -1,14 +1,13 @@
+import os
+import time
+
 import torch
 from omegaconf import OmegaConf
 
-from generate_experiments import custom_example
-from utils import count_parameters
-from utils import listdir
-from logger import Logger, timing
-from metrics.metrics import compute_confusion, compute_acc
-
 import loaders.factory as loader
-import time
+import utils
+from loggers.logger import Logger, timing
+from metrics.metrics import compute_acc, compute_confusion
 
 torch.cuda.empty_cache()
 
@@ -29,13 +28,15 @@ class Experiment:
         self.logger = logger
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        self.logger.log("Setup")
+        # self.logger.log("Setup")
         self.logger.wandb_init(self.config.meta)
 
         # Load the dataset
         self.dm = loader.load_module("dataset", self.config.data)
 
-        print(self.config.model)
+        # Set model input size
+        self.config.model.img_size = self.config.data.img_size
+
         # Load the model
         model = loader.load_module("model", self.config.model)
 
@@ -43,11 +44,7 @@ class Experiment:
         self.model = model.to(self.device)
 
         # Loss function and optimizer.
-        self.loss_fn = torch.nn.CrossEntropyLoss()
         self.optimizer = torch.optim.Adam(model.parameters(), lr=self.config.trainer.lr)
-
-        # Log info
-        self.logger.log(f"{self.config.model.module} has {count_parameters(self.model)} trainable parameters")
 
     @timing(mylogger)
     def run(self):
@@ -60,21 +57,27 @@ class Experiment:
 
             if epoch % 10 == 0:
                 end = time.time()
-                self.compute_metrics(epoch)
-                self.logger.log(msg=f"Training the model 10 epochs took: {end - start:.2f} seconds.")
+                # self.compute_metrics(epoch)
+                self.logger.log(
+                    msg=f"Training the model 10 epochs took: {end - start:.2f} seconds."
+                )
                 start = time.time()
 
-        self.finalize_run()
+        # self.finalize_run()
 
     def run_epoch(self):
-        for x, y in self.dm.train_dataloader():
-            batch_gpu, y_gpu = x.to(self.device), y.to(self.device)
+        for batch_idx, (x, y) in enumerate(self.dm.train_dataloader()):
+            X, _ = x.to(self.device), y.to(self.device)
 
             self.optimizer.zero_grad(set_to_none=True)
+            results = self.model(X)
 
-            pred = self.model(batch_gpu)
-
-            loss = self.loss_fn(pred, y_gpu)
+            stats = self.model.loss_function(
+                *results,
+                batch_idx=batch_idx,
+                M_N=0.00025,
+            )
+            loss = stats["loss"]
             loss.backward()
 
             self.optimizer.step()
@@ -97,6 +100,7 @@ class Experiment:
         )
 
     def compute_metrics(self, epoch):
+
         loss, acc = compute_acc(self.model, self.dm.val_dataloader(), self.loss_fn)
 
         # Log statements to console
@@ -105,12 +109,41 @@ class Experiment:
             params={"epoch": epoch, "val_loss": loss.item(), "val_acc": acc},
         )
 
+    @timing(mylogger)
+    def save_run(self):
+
+        # Save training or full?
+        for train_data, train_labels in self.dm.full_dataloader():
+
+            embedding = self.model.latent(train_data).detach().numpy()
+            labels = train_labels.detach().numpy()
+
+            results = {"embedding": embedding, "labels": labels}
+
+        # Save array as Pickle
+        utils.save_embedding(results, self.config)
+        self.logger.log(msg=f"Embedding Size: {embedding.shape}.")
+
 
 def main():
-    exp = Experiment("./experiment/custom_example/config.yaml", logger=mylogger, dev=True)
-    exp.run()
+    path = utils.get_experiment_dir()
+    experiments = os.listdir(path)
+    experiments.sort()
+    for cfg in experiments:
+        file = os.path.join(path, cfg)
+        exp = Experiment(file, logger=mylogger, dev=True)
+        # Logging
+        exp.logger.log(msg=f"Starting Experiments for {cfg}")
+        exp.logger.log(
+            msg=f"{exp.config.model.module} training on {exp.config.data.module}"
+        )
+        exp.logger.log(f"{utils.count_parameters(exp.model)} trainable parameters")
+
+        # Execute Experiment
+        exp.run()
+        exp.save_run()
+        print()
 
 
 if __name__ == "__main__":
-    custom_example()
     main()

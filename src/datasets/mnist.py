@@ -1,32 +1,18 @@
-from datasets.base_dataset import DataModule
 import torch
-from torchvision.datasets import MNIST
 import torchvision.transforms as transforms
-from torch.utils.data import random_split
+from torchvision.datasets import MNIST
 
-from dataclasses import dataclass
+from config import DataModuleConfig
+from datasets.base_dataset import DataModule
 from loaders.factory import register
-from datasets.base_dataset import DataModuleConfig
-
-
-@dataclass
-class MnistConfig(DataModuleConfig):
-    module: str = "datasets.custom_dataset"
-    data_dir: str = "./data"
-    batch_size: int = 64
-    num_workers: int = 0
-    pin_memory = False
 
 
 class MnistDataModule(DataModule):
     """
-    Example implementation for an existing dataset.
-    Note that we do the transform here, that is why we
-    need to create a separate class for the "new"
-    dataset.
+    MNIST
     """
 
-    def __init__(self, config: MnistConfig):
+    def __init__(self, config: DataModuleConfig):
         super().__init__(config)
         self.config = config
 
@@ -47,6 +33,7 @@ class MnistDataModule(DataModule):
                             transforms.RandomVerticalFlip(),
                             transforms.RandomHorizontalFlip(),
                             transforms.ToTensor(),
+                            # transforms.Lambda(lambda x: torch.flatten(x)),
                         ]
                     ),
                     download=True,
@@ -59,6 +46,7 @@ class MnistDataModule(DataModule):
                             transforms.RandomVerticalFlip(),
                             transforms.RandomHorizontalFlip(),
                             transforms.ToTensor(),
+                            # transforms.Lambda(lambda x: torch.flatten(x)),
                         ]
                     ),
                     download=True,

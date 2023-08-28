@@ -1,0 +1,15 @@
+# Byte-compiled / optimized / DLL files
+*__pycache__/
+*.DS_Store
+
+# Environments
+.env
+.venv
+.vscode
+
+# Outputs
+data/
+*.yaml
+*.html
+
+
