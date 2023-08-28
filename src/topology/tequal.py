@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from gtda.diagrams import PairwiseDistance
+from gtda.diagrams import Filtering, PairwiseDistance, Scaler
 from gtda.homology import WeakAlphaPersistence
 from sklearn.cluster import AgglomerativeClustering
 
@@ -27,6 +27,7 @@ class TEQUAL:
         for X in self.point_clouds:
             try:
                 diagram = self.alpha.fit_transform(X)
+                # dgm = Filtering().fit_transform(diagram)
                 diagrams.append(diagram)
             except (ValueError) as error:
                 self.logger.log(
@@ -34,6 +35,14 @@ class TEQUAL:
                 )
         self.diagrams = diagrams
         return self.diagrams
+
+    def process_diagrams(self, metric: str = "landscape"):
+        # Pad Diagrams
+        padded_diagrams = utils.gtda_pad(self.diagrams, self.dims)
+        # TODO: Implement Scaler
+        # scaler = Scaler(metric=metric)
+        # self.scaled_diagrams = scaler.fit_transform(self.diagrams)
+        return padded_diagrams
 
     def quotient(
         self,
@@ -50,10 +59,11 @@ class TEQUAL:
         self.metric = metric
         self.linkage = linkage
 
+        diagrams = self.process_diagrams(metric)
         # Pairwise Distances
         distance_metric = PairwiseDistance(metric=metric)
-        padded_diagrams = utils.gtda_pad(self.diagrams, self.dims)
-        self.distance_relation = distance_metric.fit_transform(padded_diagrams)
+
+        self.distance_relation = distance_metric.fit_transform(diagrams)
 
         self.eq_relation = AgglomerativeClustering(
             metric="precomputed",
