@@ -9,8 +9,10 @@ from loggers.logger import Logger
 
 
 class TEQUAL:
-    def __init__(self, data: list, max_dim: int = 1) -> None:
+    def __init__(self, data: list, labels: list, max_dim: int = 1) -> None:
+
         self.point_clouds = [utils.gtda_reshape(X) for X in data]
+        self.labels = labels
 
         self.dims = tuple(range(max_dim + 1))
 
@@ -52,8 +54,6 @@ class TEQUAL:
         distance_metric = PairwiseDistance(metric=metric)
         padded_diagrams = utils.gtda_pad(self.diagrams, self.dims)
         self.distance_relation = distance_metric.fit_transform(padded_diagrams)
-
-        print(self.distance_relation)
 
         self.eq_relation = AgglomerativeClustering(
             metric="precomputed",
