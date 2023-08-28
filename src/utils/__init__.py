@@ -96,49 +96,49 @@ def fetch_embeddings(dataset, model) -> list:
 
 
 def gtda_reshape(embedding):
-    X = np.squeeze(np.array(embedding))
-    return X.reshape(1, *X.shape)
+    return embedding.reshape(1, *embedding.shape)
 
 
 def gtda_pad(diagrams, dims=(0, 1)):
-    feature_counts = {}
-    for i, diagram in enumerate(diagrams):
-        feature_dims = diagram[:, 2:]
-        tmp = {}
-        for dim in dims:
-            num_features = sum(np.where(feature_dims == dim, True, False))[0]
-            tmp[dim] = num_features
-        feature_counts[i] = tmp
-
+    homology_dims = {}
     sizes = {}
-    for dim in dims:
-        counter = []
-        for id in feature_counts:
-            counter.append(feature_counts[id][dim])
-        sizes[dim] = max(counter)
+    for i, diagram in enumerate(diagrams):
+        tmp = {}
+        counter = {}
+        for dim in dims:
+            # Generate Sub Diagram for particular dim
+            sub_dgm = diagram[diagram[:, :, 2] == dim]
+            counter[dim] = len(sub_dgm)
+            tmp[dim] = sub_dgm
 
-    total_features = sum(sizes.values())
-    new_diagrams = np.empty(
+        homology_dims[i] = tmp
+        sizes[i] = counter
+
+    # Building Padded Diagram Template
+    total_features = 0
+    template_sizes = {}
+    for dim in dims:
+        size = max([dgm_id[dim] for dgm_id in sizes.values()])
+        template_sizes[dim] = size
+        total_features += size
+
+    template = np.zeros(
         (
             len(diagrams),
             total_features,
             3,
         )
     )
-
-    for i, diagram in enumerate(diagrams):
-
-        start = 0
+    # Populate Template
+    for i in range(len(diagrams)):
+        pos = 0  # position in template
         for dim in dims:
-            sub_length = start + feature_counts[i][dim]
-            pad_length = start + sizes[dim]
-            sub = diagram[start:sub_length, :]
-            new_diagrams[i, start:sub_length, :] = sub
+            original_len = pos + sizes[i][dim]
+            template_len = pos + template_sizes[dim]
+            template[i, pos:original_len, :] = homology_dims[i][dim]
 
-            padding = np.zeros(
-                shape=(1, pad_length - sub_length, 3),
-            )
-            padding[:, :, 2:] = int(dim)
-            new_diagrams[i, sub_length:pad_length, :] = padding
-            start = pad_length
-    return new_diagrams
+            template[i, pos:template_len, 2] = int(dim)
+            # Reset position for next dimension
+            pos += template_sizes[dim]
+
+    return template

@@ -20,15 +20,15 @@ class TEQUAL:
         self.eq_relation = None
         self.logger = Logger
 
-    def generate_diagrams(self):
+    def generate_diagrams(self) -> list:
         diagrams = []
         for X in self.point_clouds:
             try:
-                diagram = np.squeeze(self.alpha.fit_transform(X))
+                diagram = self.alpha.fit_transform(X)
                 diagrams.append(diagram)
-            except ValueError:
+            except (ValueError) as error:
                 self.logger.log(
-                    "TRAINING ERROR: NaNs in the latent space representation"
+                    f"TRAINING ERROR: {error} NaNs in the latent space representation"
                 )
         self.diagrams = diagrams
         return self.diagrams
@@ -52,6 +52,8 @@ class TEQUAL:
         distance_metric = PairwiseDistance(metric=metric)
         padded_diagrams = utils.gtda_pad(self.diagrams, self.dims)
         self.distance_relation = distance_metric.fit_transform(padded_diagrams)
+
+        print(self.distance_relation)
 
         self.eq_relation = AgglomerativeClustering(
             metric="precomputed",
