@@ -27,11 +27,11 @@ if __name__ == "__main__":
         T.generate_diagrams()
 
         T.quotient(epsilon)
-        # embedding_grid = vis.visualize_embeddings(T, labels)
-        # dendrogram, colormap = vis.visualize_dendrogram(T)
-        # experiment = utils.get_experiment_dir()
-        # out_dir = os.path.join(experiment, f"../results/{dataset}/")
-        # if not os.path.isdir(out_dir):
-        #     os.makedirs(out_dir, exist_ok=True)
-        # file = os.path.join(out_dir, f"{model}.html")
-        # vis.save_visualizations_as_html([embedding_grid, dendrogram], file)
+        embedding_grid = vis.visualize_embeddings(T)
+        dendrogram, colormap = vis.visualize_dendrogram(T)
+        experiment = utils.get_experiment_dir()
+        out_dir = os.path.join(experiment, f"../results/{dataset}/")
+        if not os.path.isdir(out_dir):
+            os.makedirs(out_dir, exist_ok=True)
+        file = os.path.join(out_dir, f"{model}.html")
+        vis.save_visualizations_as_html([embedding_grid, dendrogram], file)
