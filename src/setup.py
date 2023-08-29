@@ -32,16 +32,18 @@ def configure_models():
 
     hidden_dims = model_params["hidden_dims"]
     latent_dims = model_params["latent_dims"]
+    alphas = model_params["alphas"]
 
     # Model Space
-    models = list(itertools.product(modules, hidden_dims, latent_dims))
+    models = list(itertools.product(modules, hidden_dims, latent_dims, alphas))
     ModelConfigs = []
     # Enumerate Model Configs
-    for (module, hidden_dims, latent_dim) in models:
+    for module, hidden_dims, latent_dim, alpha in models:
         cfg = AutoEncoderConfig(
             module=module,
             hidden_dims=hidden_dims,
             latent_dim=latent_dim,
+            alpha=alpha,
         )
         ModelConfigs.append(cfg)
     return ModelConfigs
