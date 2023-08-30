@@ -74,6 +74,7 @@ def generate_experiments() -> None:
     """
     params = utils.read_parameter_file()
     folder = utils.create_experiment_folder()
+    utils.copy_parameter_file(folder)
 
     # Create meta data
 

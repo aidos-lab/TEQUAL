@@ -32,6 +32,13 @@ def read_parameter_file():
     return params
 
 
+def copy_parameter_file(folder):
+    file = os.path.join(folder, "../params.yaml")
+    params = read_parameter_file()
+    with open(file, "w") as f:
+        OmegaConf.save(params, f)
+
+
 def get_experiment_dir():
     name = read_parameter_file()["experiment"]
     root = project_root_dir()
