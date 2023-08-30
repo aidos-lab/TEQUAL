@@ -1,8 +1,10 @@
+import functools
+import operator
+
 import torch
 from torch import nn
 from torch.nn import functional as F
 
-from config import AutoEncoderConfig
 from loaders.factory import register
 from models import BaseVAE
 
@@ -37,13 +39,24 @@ class VanillaVAE(BaseVAE):
             )
 
         self.encoder = nn.Sequential(*modules)
-        self.fc_mu = nn.Linear(self.hidden_dims[-1], self.latent_dim)
-        self.fc_var = nn.Linear(self.hidden_dims[-1], self.latent_dim)
+
+        # Tracking Encoder Shapes
+        self.encoded_shape = self.encoder(
+            torch.rand(1, 1, self.img_size, self.img_size)
+        ).shape[1:]
+        self.num_features = functools.reduce(
+            operator.mul,
+            list(self.encoded_shape),
+        )
+
+        # VAE Linear Layers
+        self.fc_mu = nn.Linear(self.num_features, self.latent_dim)
+        self.fc_var = nn.Linear(self.num_features, self.latent_dim)
 
         # Build Decoder
         modules = []
 
-        self.decoder_input = nn.Linear(self.latent_dim, self.hidden_dims[-1] * 4)
+        self.decoder_input = nn.Linear(self.latent_dim, self.num_features)
 
         self.rhidden_dims = self.hidden_dims[::-1]
 
@@ -55,6 +68,7 @@ class VanillaVAE(BaseVAE):
                     kernel_size=3,
                     stride=2,
                     padding=1,
+                    output_padding=1,
                 ),
                 nn.BatchNorm2d(self.rhidden_dims[i + 1]),
                 nn.LeakyReLU(),
@@ -63,11 +77,22 @@ class VanillaVAE(BaseVAE):
 
         self.decoder = nn.Sequential(*modules)
 
+        # FINAL LAYER
         self.final_layer = nn.Sequential(
+            nn.ConvTranspose2d(
+                self.rhidden_dims[-1],
+                self.rhidden_dims[-1],
+                kernel_size=3,
+                stride=1,
+                padding=1,
+            ),
+            nn.BatchNorm2d(self.rhidden_dims[-1]),
+            nn.LeakyReLU(),
             nn.Conv2d(
                 self.rhidden_dims[-1],
-                out_channels=self.rhidden_dims[-1],
+                out_channels=3,
                 kernel_size=3,
+                stride=1,
                 padding=1,
             ),
             nn.Tanh(),
@@ -81,7 +106,6 @@ class VanillaVAE(BaseVAE):
         :return: (Tensor) List of latent codes
         """
         result = self.encoder(input)
-        print(f"Shape: {result.shape}")
         result = torch.flatten(result, start_dim=1)
 
         # Split the result into mu and var components
@@ -99,11 +123,12 @@ class VanillaVAE(BaseVAE):
         :return: (Tensor) [B x C x H x W]
         """
         result = self.decoder_input(z)
-        result = result.view(-1, self.hidden_dims[-1], 2, 2)
+        result = result.view(-1, *self.encoded_shape)
         result = self.decoder(result)
-        result = self.final_layer(result)
-        print(result.shape)
-        result.view((-1, 1, self.img_size, self.img_size))
+
+        # TODO: Figure out how/why this final layer works
+        # result = self.final_layer(result)
+        # result = result.view(-1, self.img_size, self.img_size)
         return result
 
     def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
@@ -149,6 +174,11 @@ class VanillaVAE(BaseVAE):
             "Reconstruction_Loss": recons_loss.detach(),
             "KLD": -kld_loss.detach(),
         }
+
+    def latent(self, input: Tensor, **kwargs) -> Tensor:
+        mu, log_var = self.encode(input)
+        z = self.reparameterize(mu, log_var)
+        return z
 
     def sample(self, num_samples: int, current_device: int, **kwargs) -> Tensor:
         """
