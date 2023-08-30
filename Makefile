@@ -17,6 +17,10 @@ quotient:
 	@echo "Computing Topological Quotients"
 	@poetry run python src/quotient.py
 
+
+clean-experiment: clean-configs clean-results
+	@rm -rf src/experiments/${EXPERIMENT}/
+
 clean-configs:
 	@echo "Cleaning Configs for ${EXPERIMENT}"
 	@rm -rf src/experiments/${EXPERIMENT}/configs
