@@ -9,14 +9,20 @@ from loggers.logger import Logger
 
 
 class TEQUAL:
-    def __init__(self, data: list, labels: list, max_dim: int = 1) -> None:
+    def __init__(
+        self, data: list, labels: list, max_dim: int = 1, max_edge_length=5
+    ) -> None:
 
         self.point_clouds = [utils.gtda_reshape(X) for X in data]
         self.labels = labels
 
         self.dims = tuple(range(max_dim + 1))
 
-        self.alpha = WeakAlphaPersistence(homology_dimensions=self.dims)
+        self.filtration_inf = max_edge_length
+
+        self.alpha = WeakAlphaPersistence(
+            homology_dimensions=self.dims, max_edge_length=max_edge_length
+        )
         self.diagrams = None
         self.distance_relation = None
         self.eq_relation = None
@@ -39,6 +45,10 @@ class TEQUAL:
     def process_diagrams(self, metric: str = "landscape"):
         # Pad Diagrams
         padded_diagrams = utils.gtda_pad(self.diagrams, self.dims)
+
+        # Remove inf features -> replace with large value
+        # np.nan_to_num(padded_diagrams, posinf=posinf, copy=False)
+
         # TODO: Implement Scaler
         # scaler = Scaler(metric=metric)
         # self.scaled_diagrams = scaler.fit_transform(self.diagrams)
@@ -59,10 +69,11 @@ class TEQUAL:
         self.metric = metric
         self.linkage = linkage
 
+        # Pad and Clean Diagrams
         diagrams = self.process_diagrams(metric)
-        # Pairwise Distances
-        distance_metric = PairwiseDistance(metric=metric)
 
+        # Pairwise Distances
+        distance_metric = PairwiseDistance(metric="landscape")
         self.distance_relation = distance_metric.fit_transform(diagrams)
 
         self.eq_relation = AgglomerativeClustering(
@@ -74,7 +85,7 @@ class TEQUAL:
         )
         self.eq_relation.fit(self.distance_relation)
 
-        return self.eq_relation
+        return self.distance_relation
 
     def summary(self):
         """Dendrogram height filtration"""
