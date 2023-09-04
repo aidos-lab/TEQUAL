@@ -18,11 +18,11 @@ class DGAECONV(BaseVAE):
         self.in_channels = self.config.in_channels
         self.img_size = self.config.img_size
         self.input_dim = (1, self.img_size, self.img_size)
+        self.kernel_size = self.config.kernel_size
 
         # Fixed for now
         self.fc_hidden = 64
         self.alpha = 3
-        self.kernel_size = 10
 
         _, m, n = self.input_dim
 
