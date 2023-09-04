@@ -45,6 +45,7 @@ class AutoEncoderConfig:
     # Set Model Architechture
     in_channels: int = 1
     hidden_dims: list = field(default_factory=list)
+    kernel_size: int = 3
     alpha: float = None
     latent_dim: int = 2
 

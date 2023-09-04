@@ -109,7 +109,7 @@ class InfoVAE(BaseVAE):
             nn.LeakyReLU(),
             nn.Conv2d(
                 self.rhidden_dims[-1],
-                out_channels=3,
+                out_channels=self.in_channels,
                 kernel_size=3,
                 stride=1,
                 padding=1,

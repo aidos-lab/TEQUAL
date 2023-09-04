@@ -14,8 +14,12 @@ from .types_ import *
 class VanillaVAE(BaseVAE):
     def __init__(self, config) -> None:
         super(VanillaVAE, self).__init__(config)
+        # Model Params
         self.latent_dim = self.config.latent_dim
         self.hidden_dims = self.config.hidden_dims
+        self.kernel_size = self.config.kernel_size
+
+        # Data Description
         self.in_channels = self.config.in_channels
         self.img_size = self.config.img_size
         self.input_dim = self.img_size**2
@@ -90,7 +94,7 @@ class VanillaVAE(BaseVAE):
             nn.LeakyReLU(),
             nn.Conv2d(
                 self.rhidden_dims[-1],
-                out_channels=3,
+                out_channels=1,
                 kernel_size=3,
                 stride=1,
                 padding=1,
@@ -127,8 +131,8 @@ class VanillaVAE(BaseVAE):
         result = self.decoder(result)
 
         # TODO: Figure out how/why this final layer works
-        # result = self.final_layer(result)
-        # result = result.view(-1, self.img_size, self.img_size)
+        result = self.final_layer(result)
+        result = result.view(-1, self.img_size, self.img_size)
         return result
 
     def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
