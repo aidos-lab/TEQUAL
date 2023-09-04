@@ -76,6 +76,7 @@ class Experiment:
                 *results,
                 batch_idx=batch_idx,
                 M_N=0.00025,
+                optimizer_idx=0,
             )
             loss = stats["loss"]
             loss.backward()
