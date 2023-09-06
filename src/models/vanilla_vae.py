@@ -94,7 +94,7 @@ class VanillaVAE(BaseVAE):
             nn.LeakyReLU(),
             nn.Conv2d(
                 self.rhidden_dims[-1],
-                out_channels=1,
+                out_channels=self.in_channels,
                 kernel_size=3,
                 stride=1,
                 padding=1,
@@ -116,7 +116,6 @@ class VanillaVAE(BaseVAE):
         # of the latent Gaussian distribution
         mu = self.fc_mu(result)
         log_var = self.fc_var(result)
-
         return [mu, log_var]
 
     def decode(self, z: Tensor) -> Tensor:
@@ -131,8 +130,8 @@ class VanillaVAE(BaseVAE):
         result = self.decoder(result)
 
         # TODO: Figure out how/why this final layer works
-        result = self.final_layer(result)
-        result = result.view(-1, self.img_size, self.img_size)
+        # result = self.final_layer(result)
+        # result = result.view(-1, self.img_size, self.img_size)
         return result
 
     def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
@@ -150,7 +149,7 @@ class VanillaVAE(BaseVAE):
     def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
         mu, log_var = self.encode(input)
         z = self.reparameterize(mu, log_var)
-        return [self.decode(z), input, mu, log_var]
+        return [self.decode(z), input, z, mu, log_var]
 
     def loss_function(self, *args, **kwargs) -> dict:
         """

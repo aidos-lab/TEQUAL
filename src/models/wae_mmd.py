@@ -18,7 +18,7 @@ class WAE_MMD(BaseVAE):
         reg_weight: int = 100,
         kernel_type: str = "imq",
         latent_var: float = 2.0,
-        **kwargs
+        **kwargs,
     ) -> None:
         super(WAE_MMD, self).__init__(config)
         self.latent_dim = self.config.latent_dim
@@ -59,7 +59,6 @@ class WAE_MMD(BaseVAE):
             operator.mul,
             list(self.encoded_shape),
         )
-
         # VAE Linear Layers
         self.fc_mu = nn.Linear(self.num_features, self.latent_dim)
         self.fc_var = nn.Linear(self.num_features, self.latent_dim)
