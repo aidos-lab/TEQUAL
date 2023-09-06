@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 import torch
+from torch.utils.data import RandomSampler
 from torch_geometric.data import Dataset
 from torch_geometric.loader import DataLoader, ImbalancedSampler
 
@@ -20,8 +21,18 @@ class DataModule(ABC):
     def __init__(self, config: DataModuleConfig) -> None:
         super().__init__()
         self.config = config
+        self.random_sampler = None
         self.entire_ds = self.setup()
         self.prepare_data()
+
+        if self.config.sample_size == 1:
+            self.random_sampler = None
+        else:
+            num_samples = int(self.config.sample_size * len(self.train_ds))
+            self.random_sampler = RandomSampler(
+                self.train_ds,
+                num_samples=num_samples,
+            )
 
     @abstractmethod
     def setup(self) -> Dataset:
@@ -52,6 +63,7 @@ class DataModule(ABC):
             shuffle=False,
             pin_memory=self.config.pin_memory,
             multiprocessing_context="fork",
+            sampler=self.random_sampler,
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -78,12 +90,13 @@ class DataModule(ABC):
 
     def full_dataloader(self) -> DataLoader:
         return DataLoader(
-            self.entire_ds,
-            batch_size=len(self.entire_ds),
+            self.train_ds,
+            batch_size=len(self.train_ds),
             num_workers=self.config.num_workers,
             shuffle=False,
             pin_memory=self.config.pin_memory,
             multiprocessing_context="fork",
+            sampler=self.random_sampler,
         )
 
     def info(self):

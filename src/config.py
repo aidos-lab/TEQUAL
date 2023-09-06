@@ -9,9 +9,9 @@ import utils
 @dataclass(frozen=True)
 class Config:
     meta: Any
-    data: Any
-    model: Any
-    trainer: Any
+    data_params: Any
+    model_params: Any
+    trainer_params: Any
 
 
 #  ╭──────────────────────────────────────────────────────────╮
@@ -45,6 +45,7 @@ class AutoEncoderConfig:
     # Set Model Architechture
     in_channels: int = 1
     hidden_dims: list = field(default_factory=list)
+    kernel_size: int = 3
     alpha: float = None
     latent_dim: int = 2
 
@@ -62,6 +63,7 @@ class DataModuleConfig(Protocol):
     num_workers: int = 4
     batch_size: int = 64
     pin_memory: bool = False
+    sample_size: float = None
 
 
 @dataclass

@@ -11,18 +11,22 @@ from models import BaseVAE
 from .types_ import *
 
 
-class VanillaVAE(BaseVAE):
-    def __init__(self, config) -> None:
-        super(VanillaVAE, self).__init__(config)
-        # Model Params
+class FactorVAE(BaseVAE):
+    def __init__(
+        self,
+        config,
+        gamma: float = 40.0,
+        **kwargs,
+    ) -> None:
+        super(FactorVAE, self).__init__(config)
         self.latent_dim = self.config.latent_dim
         self.hidden_dims = self.config.hidden_dims
-        self.kernel_size = self.config.kernel_size
-
-        # Data Description
         self.in_channels = self.config.in_channels
         self.img_size = self.config.img_size
         self.input_dim = self.img_size**2
+
+        # Specific Params
+        self.gamma = gamma
 
         modules = []
 
@@ -102,6 +106,21 @@ class VanillaVAE(BaseVAE):
             nn.Tanh(),
         )
 
+        # Discriminator network for the Total Correlation (TC) loss
+        self.discriminator = nn.Sequential(
+            nn.Linear(self.latent_dim, 1000),
+            nn.BatchNorm1d(1000),
+            nn.LeakyReLU(0.2),
+            nn.Linear(1000, 1000),
+            nn.BatchNorm1d(1000),
+            nn.LeakyReLU(0.2),
+            nn.Linear(1000, 1000),
+            nn.BatchNorm1d(1000),
+            nn.LeakyReLU(0.2),
+            nn.Linear(1000, 2),
+        )
+        self.D_z_reserve = None
+
     def encode(self, input: Tensor) -> List[Tensor]:
         """
         Encodes the input by passing through the encoder network
@@ -163,25 +182,50 @@ class VanillaVAE(BaseVAE):
         input = args[1]
         mu = args[2]
         log_var = args[3]
+        z = args[4]
 
         kld_weight = kwargs["M_N"]  # Account for the minibatch samples from the dataset
-        recons_loss = F.mse_loss(recons, input)
+        optimizer_idx = kwargs["optimizer_idx"]
 
-        kld_loss = torch.mean(
-            -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0
-        )
+        # Update the VAE
+        if optimizer_idx == 0:
+            recons_loss = F.mse_loss(recons, input)
+            kld_loss = torch.mean(
+                -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0
+            )
 
-        loss = recons_loss + kld_weight * kld_loss
-        return {
-            "loss": loss,
-            "Reconstruction_Loss": recons_loss.detach(),
-            "KLD": -kld_loss.detach(),
-        }
+            self.D_z_reserve = self.discriminator(z)
+            vae_tc_loss = (self.D_z_reserve[:, 0] - self.D_z_reserve[:, 1]).mean()
 
-    def latent(self, input: Tensor, **kwargs) -> Tensor:
-        mu, log_var = self.encode(input)
-        z = self.reparameterize(mu, log_var)
-        return z
+            loss = recons_loss + kld_weight * kld_loss + self.gamma * vae_tc_loss
+
+            # print(f' recons: {recons_loss}, kld: {kld_loss}, VAE_TC_loss: {vae_tc_loss}')
+            return {
+                "loss": loss,
+                "Reconstruction_Loss": recons_loss,
+                "KLD": -kld_loss,
+                "VAE_TC_Loss": vae_tc_loss,
+            }
+
+        # Update the Discriminator
+        elif optimizer_idx == 1:
+            device = input.device
+            true_labels = torch.ones(
+                input.size(0), dtype=torch.long, requires_grad=False
+            ).to(device)
+            false_labels = torch.zeros(
+                input.size(0), dtype=torch.long, requires_grad=False
+            ).to(device)
+
+            z = z.detach()  # Detach so that VAE is not trained again
+            z_perm = self.permute_latent(z)
+            D_z_perm = self.discriminator(z_perm)
+            D_tc_loss = 0.5 * (
+                F.cross_entropy(self.D_z_reserve, false_labels)
+                + F.cross_entropy(D_z_perm, true_labels)
+            )
+            # print(f'D_TC: {D_tc_loss}')
+            return {"loss": D_tc_loss, "D_TC_Loss": D_tc_loss}
 
     def sample(self, num_samples: int, current_device: int, **kwargs) -> Tensor:
         """
@@ -191,12 +235,17 @@ class VanillaVAE(BaseVAE):
         :param current_device: (Int) Device to run the model
         :return: (Tensor)
         """
-        z = torch.randn(num_samples, self.self.latent_dim)
+        z = torch.randn(num_samples, self.latent_dim)
 
         z = z.to(current_device)
 
         samples = self.decode(z)
         return samples
+
+    def latent(self, input: Tensor, **kwargs) -> Tensor:
+        mu, log_var = self.encode(input)
+        z = self.reparameterize(mu, log_var)
+        return z
 
     def generate(self, x: Tensor, **kwargs) -> Tensor:
         """
@@ -209,4 +258,4 @@ class VanillaVAE(BaseVAE):
 
 
 def initialize():
-    register("model", VanillaVAE)
+    register("model", FactorVAE)

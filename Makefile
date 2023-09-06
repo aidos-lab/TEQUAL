@@ -1,7 +1,7 @@
 include .env
 PARAMS_FILE := $(strip $(params))
 EXPERIMENT := $(shell cat $(PARAMS_FILE) | shyaml get-value experiment)
-DATASETS := $(shell cat $(PARAMS_FILE) | shyaml get-value data_params.datasets)
+DATASETS := $(shell cat $(PARAMS_FILE) | shyaml get-value data_params.dataset)
 
 all: setup train quotient
 
@@ -16,6 +16,10 @@ train:
 quotient:
 	@echo "Computing Topological Quotients"
 	@poetry run python src/quotient.py
+
+
+clean-experiment: clean-configs clean-results
+	@rm -rf src/experiments/${EXPERIMENT}/
 
 clean-configs:
 	@echo "Cleaning Configs for ${EXPERIMENT}"

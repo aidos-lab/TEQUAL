@@ -11,28 +11,29 @@ from config import *
 
 def configure_datasets():
     """Initilize data sets from `params.yaml`"""
-    data_params = utils.read_parameter_file()["data_params"]
-    sets = data_params["datasets"]
-    batch_sizes = data_params["batch_sizes"]
+    data_params = utils.read_parameter_file().data_params
+    sets = data_params.dataset
+    batch_sizes = data_params.batch_size
+    sample_sizes = data_params.sample_size
 
-    datasets = list(itertools.product(sets, batch_sizes))
+    datasets = list(itertools.product(sets, batch_sizes, sample_sizes))
 
     DataConfigs = []
-    for set, batch_size in datasets:
+    for set, batch_size, sample_size in datasets:
         class_name = utils.load_data_reference()[set]
         cfg = getattr(config, class_name)
-        DataConfigs.append(cfg(batch_size=batch_size))
+        DataConfigs.append(cfg(batch_size=batch_size, sample_size=sample_size))
     return DataConfigs
 
 
 def configure_models():
     """Initilize models from `params.yaml`"""
-    model_params = utils.read_parameter_file()["model_params"]
-    modules = model_params["models"]
+    model_params = utils.read_parameter_file().model_params
+    modules = model_params.model
 
-    hidden_dims = model_params["hidden_dims"]
-    latent_dims = model_params["latent_dims"]
-    alphas = model_params["alphas"]
+    hidden_dims = model_params.hidden_dims
+    latent_dims = model_params.latent_dim
+    alphas = model_params.alpha
 
     # Model Space
     models = list(itertools.product(modules, hidden_dims, latent_dims, alphas))
@@ -50,9 +51,9 @@ def configure_models():
 
 
 def configure_trainers():
-    trainer_params = utils.read_parameter_file()["trainer_params"]
-    learning_rates = trainer_params["lrs"]
-    epochs = trainer_params["epochs"]
+    trainer_params = utils.read_parameter_file().trainer_params
+    learning_rates = trainer_params.lr
+    epochs = trainer_params.epochs
 
     coordinates = list(itertools.product(learning_rates, epochs))
     TrainerConfigs = []
@@ -74,6 +75,7 @@ def generate_experiments() -> None:
     """
     params = utils.read_parameter_file()
     folder = utils.create_experiment_folder()
+    utils.copy_parameter_file(folder)
 
     # Create meta data
 

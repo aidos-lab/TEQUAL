@@ -11,18 +11,24 @@ from models import BaseVAE
 from .types_ import *
 
 
-class VanillaVAE(BaseVAE):
-    def __init__(self, config) -> None:
-        super(VanillaVAE, self).__init__(config)
-        # Model Params
+class DIPVAE(BaseVAE):
+    def __init__(
+        self,
+        config,
+        lambda_diag: float = 10.0,
+        lambda_offdiag: float = 5.0,
+        **kwargs,
+    ) -> None:
+        super(DIPVAE, self).__init__(config)
         self.latent_dim = self.config.latent_dim
         self.hidden_dims = self.config.hidden_dims
-        self.kernel_size = self.config.kernel_size
-
-        # Data Description
         self.in_channels = self.config.in_channels
         self.img_size = self.config.img_size
         self.input_dim = self.img_size**2
+
+        # Specific Params
+        self.lambda_diag = lambda_diag
+        self.lambda_offdiag = lambda_offdiag
 
         modules = []
 
@@ -165,23 +171,36 @@ class VanillaVAE(BaseVAE):
         log_var = args[3]
 
         kld_weight = kwargs["M_N"]  # Account for the minibatch samples from the dataset
-        recons_loss = F.mse_loss(recons, input)
+        recons_loss = F.mse_loss(recons, input, reduction="sum")
 
-        kld_loss = torch.mean(
+        kld_loss = torch.sum(
             -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0
         )
 
-        loss = recons_loss + kld_weight * kld_loss
+        # DIP Loss
+        centered_mu = mu - mu.mean(dim=1, keepdim=True)  # [B x D]
+        cov_mu = centered_mu.t().matmul(centered_mu).squeeze()  # [D X D]
+
+        # Add Variance for DIP Loss II
+        cov_z = cov_mu + torch.mean(
+            torch.diagonal((2.0 * log_var).exp(), dim1=0), dim=0
+        )  # [D x D]
+        # For DIp Loss I
+        # cov_z = cov_mu
+
+        cov_diag = torch.diag(cov_z)  # [D]
+        cov_offdiag = cov_z - torch.diag(cov_diag)  # [D x D]
+        dip_loss = self.lambda_offdiag * torch.sum(
+            cov_offdiag**2
+        ) + self.lambda_diag * torch.sum((cov_diag - 1) ** 2)
+
+        loss = recons_loss + kld_weight * kld_loss + dip_loss
         return {
             "loss": loss,
-            "Reconstruction_Loss": recons_loss.detach(),
-            "KLD": -kld_loss.detach(),
+            "Reconstruction_Loss": recons_loss,
+            "KLD": -kld_loss,
+            "DIP_Loss": dip_loss,
         }
-
-    def latent(self, input: Tensor, **kwargs) -> Tensor:
-        mu, log_var = self.encode(input)
-        z = self.reparameterize(mu, log_var)
-        return z
 
     def sample(self, num_samples: int, current_device: int, **kwargs) -> Tensor:
         """
@@ -191,12 +210,17 @@ class VanillaVAE(BaseVAE):
         :param current_device: (Int) Device to run the model
         :return: (Tensor)
         """
-        z = torch.randn(num_samples, self.self.latent_dim)
+        z = torch.randn(num_samples, self.latent_dim)
 
         z = z.to(current_device)
 
         samples = self.decode(z)
         return samples
+
+    def latent(self, input: Tensor, **kwargs) -> Tensor:
+        mu, log_var = self.encode(input)
+        z = self.reparameterize(mu, log_var)
+        return z
 
     def generate(self, x: Tensor, **kwargs) -> Tensor:
         """
@@ -209,4 +233,4 @@ class VanillaVAE(BaseVAE):
 
 
 def initialize():
-    register("model", VanillaVAE)
+    register("model", DIPVAE)

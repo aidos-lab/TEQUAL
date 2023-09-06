@@ -11,18 +11,32 @@ from models import BaseVAE
 from .types_ import *
 
 
-class VanillaVAE(BaseVAE):
-    def __init__(self, config) -> None:
-        super(VanillaVAE, self).__init__(config)
-        # Model Params
+class BetaVAE(BaseVAE):
+    num_iter = 0  # Global static variable to keep track of iterations
+
+    def __init__(
+        self,
+        config,
+        beta: int = 4,
+        gamma: float = 1000.0,
+        max_capacity: int = 25,
+        Capacity_max_iter: int = 1e5,
+        loss_type: str = "B",
+        **kwargs,
+    ) -> None:
+        super(BetaVAE, self).__init__(config)
         self.latent_dim = self.config.latent_dim
         self.hidden_dims = self.config.hidden_dims
-        self.kernel_size = self.config.kernel_size
-
-        # Data Description
         self.in_channels = self.config.in_channels
         self.img_size = self.config.img_size
         self.input_dim = self.img_size**2
+
+        # Specific Params
+        self.beta = beta
+        self.gamma = gamma
+        self.loss_type = loss_type
+        self.C_max = torch.Tensor([max_capacity])
+        self.C_stop_iter = Capacity_max_iter
 
         modules = []
 
@@ -152,51 +166,40 @@ class VanillaVAE(BaseVAE):
         return [self.decode(z), input, z, mu, log_var]
 
     def loss_function(self, *args, **kwargs) -> dict:
-        """
-        Computes the VAE loss function.
-        KL(N(\mu, \sigma), N(0, 1)) = \log \frac{1}{\sigma} + \frac{\sigma^2 + \mu^2}{2} - \frac{1}{2}
-        :param args:
-        :param kwargs:
-        :return:
-        """
+        self.num_iter += 1
         recons = args[0]
         input = args[1]
         mu = args[2]
         log_var = args[3]
-
         kld_weight = kwargs["M_N"]  # Account for the minibatch samples from the dataset
+
         recons_loss = F.mse_loss(recons, input)
 
         kld_loss = torch.mean(
             -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0
         )
 
-        loss = recons_loss + kld_weight * kld_loss
+        if self.loss_type == "H":  # https://openreview.net/forum?id=Sy2fzU9gl
+            loss = recons_loss + self.beta * kld_weight * kld_loss
+        elif self.loss_type == "B":  # https://arxiv.org/pdf/1804.03599.pdf
+            self.C_max = self.C_max.to(input.device)
+            C = torch.clamp(
+                self.C_max / self.C_stop_iter * self.num_iter, 0, self.C_max.data[0]
+            )
+            loss = recons_loss + self.gamma * kld_weight * (kld_loss - C).abs()
+        else:
+            raise ValueError("Undefined loss type.")
+
         return {
             "loss": loss,
-            "Reconstruction_Loss": recons_loss.detach(),
-            "KLD": -kld_loss.detach(),
+            "Reconstruction_Loss": recons_loss,
+            "KLD": kld_loss,
         }
 
     def latent(self, input: Tensor, **kwargs) -> Tensor:
         mu, log_var = self.encode(input)
         z = self.reparameterize(mu, log_var)
         return z
-
-    def sample(self, num_samples: int, current_device: int, **kwargs) -> Tensor:
-        """
-        Samples from the latent space and return the corresponding
-        image space map.
-        :param num_samples: (Int) Number of samples
-        :param current_device: (Int) Device to run the model
-        :return: (Tensor)
-        """
-        z = torch.randn(num_samples, self.self.latent_dim)
-
-        z = z.to(current_device)
-
-        samples = self.decode(z)
-        return samples
 
     def generate(self, x: Tensor, **kwargs) -> Tensor:
         """
@@ -209,4 +212,4 @@ class VanillaVAE(BaseVAE):
 
 
 def initialize():
-    register("model", VanillaVAE)
+    register("model", BetaVAE)

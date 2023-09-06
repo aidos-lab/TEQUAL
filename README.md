@@ -4,8 +4,14 @@
 
 
 ## Autoencoder Models
-- vanilla VAE,
+- vanilla VAE
+- info VAE
+- factor VAE
+- DIP VAE
+- beta VAE
+- betatc VAE
 - DAE
+- WAW MMD
 
 
 

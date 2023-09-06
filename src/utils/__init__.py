@@ -1,6 +1,8 @@
 import os
 import pickle
+import re
 import shutil
+from operator import itemgetter
 
 import numpy as np
 import pandas as pd
@@ -25,11 +27,24 @@ def save_config(cfg, folder, filename):
         OmegaConf.save(c, f)
 
 
+def load_config(id, folder):
+    path = os.path.join(folder, f"config_{id}.yaml")
+    cfg = OmegaConf.load(path)
+    return cfg
+
+
 def read_parameter_file():
     load_dotenv()
     YAML_PATH = os.getenv("params")
     params = OmegaConf.load(YAML_PATH)
     return params
+
+
+def copy_parameter_file(folder):
+    file = os.path.join(folder, "../params.yaml")
+    params = read_parameter_file()
+    with open(file, "w") as f:
+        OmegaConf.save(params, f)
 
 
 def get_experiment_dir():
@@ -61,9 +76,9 @@ def count_parameters(model):
 
 
 def save_embedding(latent_representation, config):
-    data_dir = os.path.join(config.data.data_dir, config.data.name)
+    data_dir = os.path.join(config.data_params.data_dir, config.data_params.name)
     sub_dir = os.path.join(
-        data_dir, f"embeddings/{config.meta.name}/{config.model.module}"
+        data_dir, f"embeddings/{config.meta.name}/{config.model_params.module}"
     )
     if not os.path.isdir(sub_dir):
         os.makedirs(sub_dir)
@@ -74,7 +89,7 @@ def save_embedding(latent_representation, config):
 
 def get_embeddings_dir(dataset: str, model: str):
     root = project_root_dir()
-    experiment = read_parameter_file()["experiment"]
+    experiment = read_parameter_file().experiment
     path = os.path.join(root, f"data/{dataset}/embeddings/{experiment}/{model}/")
     assert os.path.isdir(path), "Invalid Embeddings Directory"
     return path
@@ -92,20 +107,38 @@ def remove_duplicates(data):
     return clean_X, clean_labels
 
 
-def fetch_embeddings(dataset, model) -> list:
-    dir = get_embeddings_dir(dataset, model)
+def fetch_embeddings(
+    pairs, key_val, filter_type="data_params", filter_name="sample_size"
+) -> list:
     embeddings = []
-    labels = []
-    files = os.listdir(dir)
-    files.sort()
-    for file in files:
-        file = os.path.join(dir, file)
-        with open(file, "rb") as f:
-            data = pickle.load(f)
-            X, y = remove_duplicates(data)
-        embeddings.append(X)
-        labels.append(y)
-    return embeddings, labels
+    exp = get_experiment_dir()
+
+    for dataset, model in pairs:
+        dir = get_embeddings_dir(dataset, model)
+        files = os.listdir(dir)
+        for file in files:
+            file = os.path.join(dir, file)
+            # Config_ID
+            id = int(re.search(r"\d+", file).group())
+            config = load_config(id, exp)
+            if config[filter_type][filter_name] == key_val or filter_type == "all":
+                with open(file, "rb") as f:
+                    data = pickle.load(f)
+                    X, y = remove_duplicates(data)
+                embeddings.append((X, y, id))
+
+    # Sort by Config_ID
+    embeddings = sorted(
+        embeddings,
+        key=lambda x: x[-1],
+    )
+
+    # Unpack
+    points = [itemgetter(0)(item) for item in embeddings]
+    labels = [itemgetter(1)(item) for item in embeddings]
+    configs = [load_config(itemgetter(2)(item), exp) for item in embeddings]
+
+    return points, labels, configs
 
 
 def gtda_reshape(X):
