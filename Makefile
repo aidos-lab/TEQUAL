@@ -1,7 +1,7 @@
 include .env
 PARAMS_FILE := $(strip $(params))
 EXPERIMENT := $(shell cat $(PARAMS_FILE) | shyaml get-value experiment)
-DATASETS := $(shell cat $(PARAMS_FILE) | shyaml get-value data_params.datasets)
+DATASETS := $(shell cat $(PARAMS_FILE) | shyaml get-value data_params.dataset)
 
 all: setup train quotient
 

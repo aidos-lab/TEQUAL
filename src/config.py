@@ -9,9 +9,9 @@ import utils
 @dataclass(frozen=True)
 class Config:
     meta: Any
-    data: Any
-    model: Any
-    trainer: Any
+    data_params: Any
+    model_params: Any
+    trainer_params: Any
 
 
 #  ╭──────────────────────────────────────────────────────────╮
@@ -63,6 +63,7 @@ class DataModuleConfig(Protocol):
     num_workers: int = 4
     batch_size: int = 64
     pin_memory: bool = False
+    sample_size: float = None
 
 
 @dataclass
