@@ -9,12 +9,9 @@ from loggers.logger import Logger
 
 
 class TEQUAL:
-    def __init__(
-        self, data: list, labels: list, max_dim: int = 1, max_edge_length=5
-    ) -> None:
+    def __init__(self, data: list, max_dim: int = 1, max_edge_length=5) -> None:
 
         self.point_clouds = [utils.gtda_reshape(X) for X in data]
-        self.labels = labels
 
         self.dims = tuple(range(max_dim + 1))
 

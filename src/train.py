@@ -32,19 +32,21 @@ class Experiment:
         self.logger.wandb_init(self.config.meta)
 
         # Load the dataset
-        self.dm = loader.load_module("dataset", self.config.data)
+        self.dm = loader.load_module("dataset", self.config.data_params)
 
         # Set model input size
-        self.config.model.img_size = self.config.data.img_size
+        self.config.model_params.img_size = self.config.data_params.img_size
 
         # Load the model
-        model = loader.load_module("model", self.config.model)
+        model = loader.load_module("model", self.config.model_params)
 
         # Send model to device
         self.model = model.to(self.device)
 
         # Loss function and optimizer.
-        self.optimizer = torch.optim.Adam(model.parameters(), lr=self.config.trainer.lr)
+        self.optimizer = torch.optim.Adam(
+            model.parameters(), lr=self.config.trainer_params.lr
+        )
 
     @timing(mylogger)
     def run(self):
@@ -52,7 +54,7 @@ class Experiment:
         Runs an experiment given the loaded config files.
         """
         start = time.time()
-        for epoch in range(self.config.trainer.num_epochs):
+        for epoch in range(self.config.trainer_params.num_epochs):
             self.run_epoch()
 
             if epoch % 10 == 0:
@@ -136,7 +138,7 @@ def main():
         # Logging
         exp.logger.log(msg=f"Starting Experiments for {cfg}")
         exp.logger.log(
-            msg=f"{exp.config.model.module} training on {exp.config.data.module}"
+            msg=f"{exp.config.model_params.module} training on {exp.config.data_params.module}"
         )
         exp.logger.log(f"{utils.count_parameters(exp.model)} trainable parameters")
 
