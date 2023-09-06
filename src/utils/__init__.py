@@ -76,9 +76,9 @@ def count_parameters(model):
 
 
 def save_embedding(latent_representation, config):
-    data_dir = os.path.join(config.data.data_dir, config.data.name)
+    data_dir = os.path.join(config.data_params.data_dir, config.data_params.name)
     sub_dir = os.path.join(
-        data_dir, f"embeddings/{config.meta.name}/{config.model.module}"
+        data_dir, f"embeddings/{config.meta.name}/{config.model_params.module}"
     )
     if not os.path.isdir(sub_dir):
         os.makedirs(sub_dir)
@@ -116,7 +116,6 @@ def fetch_embeddings(
     for dataset, model in pairs:
         dir = get_embeddings_dir(dataset, model)
         files = os.listdir(dir)
-        files.sort()
         for file in files:
             file = os.path.join(dir, file)
             # Config_ID

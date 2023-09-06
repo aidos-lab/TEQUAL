@@ -38,8 +38,8 @@ if __name__ == "__main__":
         embeddings, labels, configs = utils.fetch_embeddings(
             pairs,
             key_val,
-            filter_name="sample_size",
-            filter_type="data",
+            filter_type,
+            filter_name,
         )
         T = TEQUAL(data=embeddings, max_dim=max_dim)
 
