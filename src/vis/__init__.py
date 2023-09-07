@@ -15,16 +15,20 @@ pio.renderers.default = "chrome"
 
 
 def visualize_embeddings(
-    T: TEQUAL, key_val, filter_name, labels=None, x_axis=None, y_axis=None
+    T: TEQUAL, key_val, filter_name, configs, labels=None, x_axis=None, y_axis=None
 ) -> go.Figure:
 
     N = len(T.point_clouds)
     params = utils.read_parameter_file()
 
     # Formatting Plot Axis Labels and titles
+
+    subplot_titles = list(map(str, [cfg.meta.id for cfg in configs]))
+
     if x_axis and y_axis:
         title = f"{params.experiment}: {filter_name} = {key_val}"
         x_labels = list(map(str, params[x_axis[0]][x_axis[1]]))
+        x_labels = [x_labels[i] + " " + subplot_titles[i] for i in range(N)]
         if y_axis == 1:
             y_labels = [str(key_val)]
             y_title = filter_name
@@ -95,12 +99,13 @@ def visualize_embeddings(
     return fig
 
 
-def visualize_dendrogram(T: TEQUAL):
+def visualize_dendrogram(T: TEQUAL, configs):
     def diagram_distance(_):
         return squareform(T.distance_relation)
 
     fig = ff.create_dendrogram(
-        np.arange(len(T.diagrams)),
+        X=np.arange(len(T.diagrams)),
+        labels=list(map(str, [cfg.model_params.module for cfg in configs])),
         distfun=diagram_distance,
         colorscale=px.colors.qualitative.Plotly,
         linkagefun=lambda x: linkage(x, T.linkage),

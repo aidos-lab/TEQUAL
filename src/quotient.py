@@ -32,6 +32,7 @@ if __name__ == "__main__":
     filter_values = params[filter_type][filter_name]
 
     x_axis = params.plotting_params.x_axis
+    y_axis = params.plotting_params.y_axis
 
     plots = []
     for key_val in filter_values:
@@ -41,6 +42,7 @@ if __name__ == "__main__":
             filter_type,
             filter_name,
         )
+
         T = TEQUAL(data=embeddings, max_dim=max_dim)
 
         T.generate_diagrams()
@@ -51,11 +53,13 @@ if __name__ == "__main__":
             T,
             key_val,
             filter_name,
+            configs,
             labels=labels,
-            x_axis=params.plotting_params.x_axis,
-            y_axis=params.plotting_params.y_axis,
+            x_axis=x_axis,
+            y_axis=y_axis,
         )
-        dendrogram, colormap = vis.visualize_dendrogram(T)
+
+        dendrogram, colormap = vis.visualize_dendrogram(T, configs)
         experiment = utils.get_experiment_dir()
 
         out_dir = os.path.join(experiment, f"../results/")
