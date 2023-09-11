@@ -36,6 +36,7 @@ class Experiment:
 
         # Set model input size
         self.config.model_params.img_size = self.config.data_params.img_size
+        self.config.model_params.in_channels = self.config.data_params.in_channels
 
         # Load the model
         model = loader.load_module("model", self.config.model_params)

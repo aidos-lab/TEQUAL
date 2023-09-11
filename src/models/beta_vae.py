@@ -60,7 +60,7 @@ class BetaVAE(BaseVAE):
 
         # Tracking Encoder Shapes
         self.encoded_shape = self.encoder(
-            torch.rand(1, 1, self.img_size, self.img_size)
+            torch.rand(1, self.in_channels, self.img_size, self.img_size)
         ).shape[1:]
         self.num_features = functools.reduce(
             operator.mul,

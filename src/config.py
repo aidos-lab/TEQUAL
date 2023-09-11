@@ -84,6 +84,15 @@ class XycConfig(DataModuleConfig):
     num_classes: int = 3
 
 
+@dataclass
+class CelebAConfig(DataModuleConfig):
+    module: str = "datasets.celebA"
+    name: str = "celebA"
+    in_channels: int = 3
+    img_size: int = 64
+    num_classes: int = 40
+
+
 #  ╭──────────────────────────────────────────────────────────╮
 #  │ Trainer configurations                                   │
 #  ╰──────────────────────────────────────────────────────────╯
