@@ -1,16 +1,26 @@
 from __future__ import annotations
 
-import logging
-
-from typing import Callable, Any
-import time
 import functools
+import logging
+import os
+import time
+from typing import Any, Callable
 
 import wandb
+from dotenv import load_dotenv
+
+load_dotenv()
+root = os.getenv("root")
 
 
 class Logger:
-    def __init__(self, dev: bool = True):
+    def __init__(
+        self,
+        exp: str,
+        name: str,
+        dev: bool = True,
+        out_file: bool = True,
+    ):
         self.dev = dev
         self.wandb = None
 
@@ -25,10 +35,16 @@ class Logger:
         ch.setFormatter(formatter)
         self.logger.addHandler(ch)
 
-        """ fh = logging.FileHandler(filename=f"./logs/test-{timestr}.logs",mode="a") """
-        """ fh.setLevel(logging.DEBUG) """
-        """ fh.setFormatter(formatter) """
-        """ self.logger.addHandler(fh) """
+        if out_file:
+            logs_dir = f"{root}/logs/{exp}/"
+            if not os.path.isdir(logs_dir):
+                os.makedirs(logs_dir, exist_ok=True)
+
+            log_file = os.path.join(logs_dir, f"{name}.log")
+            fh = logging.FileHandler(filename=log_file, mode="a")
+            fh.setLevel(logging.DEBUG)
+            fh.setFormatter(formatter)
+            self.logger.addHandler(fh)
 
     def wandb_init(self, config):
         if self.dev:

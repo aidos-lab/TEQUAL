@@ -6,11 +6,13 @@
 .env
 .venv
 .vscode
+src/experiments/
 
 # Outputs
 data/
 *.yaml
 *.html
 *ipynb
+*ipynb_checkpoints
 
 
