@@ -62,9 +62,9 @@ def visualize_embeddings(
         # Sampling for plotly outputs
         if labels is None:
             labels = np.zeros(shape=(N, len(df)))
-        df["labels"] = labels[i]
+        df["labels"] = labels[i].T[0]
 
-        sub_df = df.sample(n=(int(len(df) / 2)))
+        sub_df = df.sample(n=(int(len(df) / 10)))
 
         fig.add_trace(
             go.Scatter(

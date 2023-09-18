@@ -36,7 +36,7 @@ class Logger:
         self.logger.addHandler(ch)
 
         if out_file:
-            logs_dir = f"{root}/logs/{exp}/"
+            logs_dir = f"{root}/experiments/{exp}/logs/"
             if not os.path.isdir(logs_dir):
                 os.makedirs(logs_dir, exist_ok=True)
 

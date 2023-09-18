@@ -6,7 +6,7 @@
 .env
 .venv
 .vscode
-src/experiments/
+experiments/
 
 # Outputs
 data/
@@ -14,5 +14,6 @@ data/
 *.html
 *ipynb
 *ipynb_checkpoints
+*.log
 
 

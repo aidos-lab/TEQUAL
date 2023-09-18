@@ -2,6 +2,7 @@ import argparse
 import sys
 import time
 
+import numpy as np
 import torch
 from omegaconf import OmegaConf
 
@@ -134,7 +135,9 @@ class Experiment:
 
         embedding = torch.Tensor()
         labels = torch.Tensor()
-        if self.loss:
+        if np.isnan(self.loss.item()):
+            self.logger.log(msg="Not saving embedding: Nans in loss function")
+        else:
             loader = self.dm.full_dataloader()
             for x, y in loader:
                 train_data, train_labels = x.float().to(self.device), y.float()
@@ -154,9 +157,6 @@ class Experiment:
             results = {f"embedding": embedding_cpu, "labels": labels_cpu}
             utils.save_embedding(results, self.config)
             self.logger.log(msg=f"Embedding Size: {embedding.shape}.")
-
-        else:
-            self.logger.log(msg="Not saving embedding: Nans in loss function")
 
 
 def main(cfg):

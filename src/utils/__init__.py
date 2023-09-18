@@ -55,14 +55,14 @@ def copy_parameter_file(folder):
 def get_experiment_dir():
     name = read_parameter_file()["experiment"]
     root = project_root_dir()
-    path = os.path.join(root, f"src/experiments/{name}/configs/")
+    path = os.path.join(root, f"experiments/{name}/configs/")
     return path
 
 
 def create_experiment_folder():
     name = read_parameter_file()["experiment"]
     root = project_root_dir()
-    path = os.path.join(root, f"src/experiments/{name}/configs/")
+    path = os.path.join(root, f"experiments/{name}/configs/")
     shutil.rmtree(path, ignore_errors=True)
     os.makedirs(path)
     return path
@@ -97,7 +97,7 @@ def save_embedding(latent_representation, config):
 def save_distance_matrix(distances, filter_name, filter_val):
     root = project_root_dir()
     params = read_parameter_file()
-    out_dir = root + f"/src/experiments/{params.experiment}/results/distances/"
+    out_dir = root + f"experiments/{params.experiment}/results/distances/"
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir, exist_ok=True)
     out_file = os.path.join(out_dir, f"distances_{filter_name}_{filter_val}.pkl")
@@ -110,7 +110,7 @@ def load_distance_matrix(filter_type, filter_val):
     params = read_parameter_file()
     distances_in_file = os.path.join(
         root,
-        "src/experiments/"
+        "experiments/"
         + params.experiment
         + "/results/distances/"
         + f"distances_{filter_type}_{filter_val}.pkl",

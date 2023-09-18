@@ -28,7 +28,7 @@ class FactorVAE(BaseVAE):
         # Specific Params
         self.gamma = gamma
 
-         assert self.hidden_dims[0] == self.in_channels, "Check in_channels"
+        assert self.hidden_dims[0] == self.in_channels, "Check in_channels"
         modules = []
 
         # Build Encoder Architechture
