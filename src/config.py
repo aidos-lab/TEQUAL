@@ -67,6 +67,15 @@ class DataModuleConfig(Protocol):
 
 
 @dataclass
+class XycConfig(DataModuleConfig):
+    module: str = "datasets.xyc"
+    name: str = "XYC"
+    in_channels: int = 1
+    img_size: int = 84
+    num_classes: int = 3
+
+
+@dataclass
 class MnistConfig(DataModuleConfig):
     module: str = "datasets.mnist"
     name: str = "MNIST"
@@ -76,12 +85,12 @@ class MnistConfig(DataModuleConfig):
 
 
 @dataclass
-class XycConfig(DataModuleConfig):
-    module: str = "datasets.xyc"
-    name: str = "XYC"
-    in_channels: int = 1
-    img_size: int = 84
-    num_classes: int = 3
+class CIFAR10Config(DataModuleConfig):
+    module: str = "datasets.cifar10"
+    name: str = "CIFAR-10"
+    in_channels: int = 3
+    img_size: int = 32
+    num_classes: int = 10
 
 
 @dataclass
