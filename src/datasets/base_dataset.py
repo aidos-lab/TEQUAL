@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 import torch
-from torch.utils.data import RandomSampler
+from torch.utils.data import RandomSampler, SequentialSampler
 from torch_geometric.data import Dataset
 from torch_geometric.loader import DataLoader, ImbalancedSampler
 
@@ -89,9 +89,10 @@ class DataModule(ABC):
         )
 
     def full_dataloader(self) -> DataLoader:
+
         return DataLoader(
             self.train_ds,
-            batch_size=len(self.train_ds),
+            batch_size=self.config.batch_size,
             num_workers=self.config.num_workers,
             shuffle=False,
             pin_memory=self.config.pin_memory,
