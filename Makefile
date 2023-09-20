@@ -3,7 +3,7 @@ PARAMS_FILE := $(strip $(params))
 EXPERIMENT := $(shell cat $(PARAMS_FILE) | shyaml get-value experiment)
 DATASETS := $(shell cat $(PARAMS_FILE) | shyaml get-value data_params.dataset)
 
-all: setup train quotient stability
+all: setup train quotient stability sensitivity
 
 setup: 
 	@echo "Generating Experiments"
@@ -19,7 +19,10 @@ quotient:
 
 stability:
 	@echo "Logging Stability Scores"
-	@poetry run python src/stability.py
+	@poetry run python src/analysis/stability.py
+sensitivity:
+	@echo "Logging Sensitivity Scores"
+	@poetry run python src/analysis/sensitivity.py
 
 
 clean-experiment: clean-configs clean-results

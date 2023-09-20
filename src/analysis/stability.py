@@ -3,15 +3,18 @@
 import itertools
 import logging
 import os
+import sys
 
 import numpy as np
-
-import utils
+from dotenv import load_dotenv
 
 if __name__ == "__main__":
+    load_dotenv()
+    root = os.getenv("root")
+    sys.path.append(root + "src")
+    import utils
 
     params = utils.read_parameter_file()
-    root = utils.project_root_dir()
 
     # Unpacking Experiments
     datasets = params.data_params.dataset
@@ -29,6 +32,7 @@ if __name__ == "__main__":
     log_file = log_dir + f"stability_{filter_name}.log"
     logger = logging.getLogger("stability_results")
     logger.setLevel(logging.INFO)
+    logger.addHandler(logging.StreamHandler(sys.stdout))
     # create file handler which logs even debug messages
     fh = logging.FileHandler(log_file)
     fh.setLevel(logging.INFO)
@@ -37,6 +41,7 @@ if __name__ == "__main__":
     # Loop through Experiments
     for key_val in filter_values:
         distances = utils.load_distance_matrix(filter_name, key_val)
+        print(distances.shape)
         matrices[key_val] = distances
 
     matrix_pairs = list(itertools.combinations(matrices, 2))
