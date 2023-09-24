@@ -24,7 +24,7 @@ class Meta:
     name: str
     id: int
     description: str
-    project: str = "TEQUAL2023"
+    project: str = "Topological Quotients"
     tags: list[str] = field(default_factory=list)
 
 

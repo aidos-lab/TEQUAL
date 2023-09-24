@@ -7,6 +7,7 @@
 .venv
 .vscode
 experiments/
+notebooks/
 
 # Outputs
 data/
@@ -16,4 +17,5 @@ data/
 *ipynb_checkpoints
 *.log
 
-
+wandb
+*.csv

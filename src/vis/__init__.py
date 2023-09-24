@@ -19,6 +19,7 @@ def visualize_embeddings(
 ) -> go.Figure:
 
     N = len(T.point_clouds)
+
     params = utils.read_parameter_file()
 
     # Formatting Plot Axis Labels and titles
@@ -28,7 +29,6 @@ def visualize_embeddings(
     if x_axis and y_axis:
         title = f"{params.experiment}: {filter_name} = {key_val}"
         x_labels = list(map(str, params[x_axis[0]][x_axis[1]]))
-        x_labels = [x_labels[i] + " " + subplot_titles[i] for i in range(N)]
         if y_axis == 1:
             y_labels = [str(key_val)]
             y_title = filter_name
@@ -54,6 +54,7 @@ def visualize_embeddings(
         y_title=y_title,
     )
 
+    fig.print_grid()
     row = 1
     col = 1
     for i, embedding in enumerate(T.point_clouds):
@@ -62,9 +63,9 @@ def visualize_embeddings(
         # Sampling for plotly outputs
         if labels is None:
             labels = np.zeros(shape=(N, len(df)))
-        df["labels"] = labels[i].T[0]
+        df["labels"] = labels[i].T[19]
 
-        sub_df = df.sample(n=(int(len(df) / 10)))
+        sub_df = df.sample(n=(int(len(df) / 5)))
 
         fig.add_trace(
             go.Scatter(
@@ -91,7 +92,7 @@ def visualize_embeddings(
         template="simple_white",
         showlegend=False,
         font=dict(color="black"),
-        title=title,
+        title=None,
     )
 
     fig.update_xaxes(showticklabels=False, tickwidth=0, tickcolor="rgba(0,0,0,0)")
@@ -117,7 +118,7 @@ def visualize_dendrogram(T: TEQUAL, configs):
         template="simple_white",
         showlegend=False,
         font=dict(color="black", size=10),
-        title="Persistence Based Clustering",
+        title="CelebA Topology-Based Model Selection",
     )
 
     fig.update_xaxes(title=dict(text=f"Models"))

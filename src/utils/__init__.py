@@ -6,6 +6,7 @@ from operator import itemgetter
 
 import numpy as np
 import pandas as pd
+import torch
 from dotenv import load_dotenv
 from omegaconf import OmegaConf
 
@@ -59,6 +60,13 @@ def get_experiment_dir():
     return path
 
 
+def get_models_dir():
+    name = read_parameter_file()["experiment"]
+    root = project_root_dir()
+    path = os.path.join(root, f"experiments/{name}/models/")
+    return path
+
+
 def create_experiment_folder():
     name = read_parameter_file()["experiment"]
     root = project_root_dir()
@@ -91,7 +99,15 @@ def save_embedding(latent_representation, config):
     with open(file, "wb") as f:
         pickle.dump(latent_representation, f)
 
-    return
+
+def save_model(model, id):
+    path = get_models_dir()
+
+    if not os.path.isdir(path):
+        os.makedirs(path)
+
+    file = os.path.join(path, f"model_{id}")
+    torch.save(model, f=file)
 
 
 def save_distance_matrix(distances, filter_name, filter_val):
@@ -120,10 +136,18 @@ def load_distance_matrix(filter_type, filter_val):
     return distances
 
 
+def load_model(id):
+    folder = get_models_dir()
+    file = os.path.join(folder, f"model_{id}")
+    model = torch.load(file)
+    return model
+
+
 def get_embeddings_dir(dataset: str, model: str):
     root = project_root_dir()
     experiment = read_parameter_file().experiment
     path = os.path.join(root, f"data/{dataset}/embeddings/{experiment}/{model}/")
+
     assert os.path.isdir(path), "Invalid Embeddings Directory"
     return path
 
@@ -152,9 +176,14 @@ def fetch_embeddings(
         for file in files:
             file = os.path.join(dir, file)
             # Config_ID
-            id = int(re.search(r"\d+", file).group())
+            id = int(re.search(r"\d+$", file).group())
             config = load_config(id, exp)
-            if config[filter_type][filter_name] == key_val or filter_type == "all":
+            if filter_type == "all":
+                with open(file, "rb") as f:
+                    data = pickle.load(f)
+                    X, y = remove_duplicates(data)
+                embeddings.append((X, y, id))
+            elif config[filter_type][filter_name] == key_val:
                 with open(file, "rb") as f:
                     data = pickle.load(f)
                     X, y = remove_duplicates(data)
@@ -221,3 +250,10 @@ def gtda_pad(diagrams, dims=(0, 1)):
             pos += template_sizes[dim]
 
     return template
+
+
+def remove_unfitted_configs(configs, idxs):
+    print(f"Removing {len(idxs)} config file(s)!")
+    for i in idxs:
+        configs.pop(i)
+    return configs

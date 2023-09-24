@@ -21,7 +21,7 @@ class BetaVAE(BaseVAE):
         gamma: float = 1000.0,
         max_capacity: int = 25,
         Capacity_max_iter: int = 1e5,
-        loss_type: str = "B",
+        loss_type: str = "H",
         **kwargs,
     ) -> None:
         super(BetaVAE, self).__init__(config)
@@ -32,7 +32,7 @@ class BetaVAE(BaseVAE):
         self.input_dim = self.img_size**2
 
         # Specific Params
-        self.beta = beta
+        self.beta = self.config.alpha
         self.gamma = gamma
         self.loss_type = loss_type
         self.C_max = torch.Tensor([max_capacity])
@@ -200,6 +200,21 @@ class BetaVAE(BaseVAE):
         mu, log_var = self.encode(input)
         z = self.reparameterize(mu, log_var)
         return z
+
+    def sample(self, num_samples: int, current_device: int, **kwargs) -> Tensor:
+        """
+        Samples from the latent space and return the corresponding
+        image space map.
+        :param num_samples: (Int) Number of samples
+        :param current_device: (Int) Device to run the model
+        :return: (Tensor)
+        """
+        z = torch.randn(num_samples, self.latent_dim)
+
+        z = z.to(current_device)
+
+        samples = self.decode(z)
+        return samples
 
     def generate(self, x: Tensor, **kwargs) -> Tensor:
         """

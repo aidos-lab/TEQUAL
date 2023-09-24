@@ -23,6 +23,9 @@ stability:
 sensitivity:
 	@echo "Logging Sensitivity Scores"
 	@poetry run python src/analysis/sensitivity.py
+similarity:
+	@echo "Logging Similarity Scores"
+	@poetry run python src/analysis/similarity.py
 
 
 clean-experiment: clean-configs clean-results

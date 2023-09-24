@@ -6,8 +6,9 @@ import os
 import time
 from typing import Any, Callable
 
-import wandb
 from dotenv import load_dotenv
+
+import wandb
 
 load_dotenv()
 root = os.getenv("root")
@@ -46,15 +47,16 @@ class Logger:
             fh.setFormatter(formatter)
             self.logger.addHandler(fh)
 
-    def wandb_init(self, config):
+    def wandb_init(self, model, config):
         if self.dev:
             self.wandb = None
         else:
             self.wandb = wandb.init(
-                project=config.project,
-                name=config.name,
-                tags=config.tags,
+                project=config.meta.name,
+                name=f"({config.model_params.module}, sample_size={config.data_params.sample_size})",
+                tags=config.meta.tags,
             )
+            wandb.watch(model, log_freq=100)
 
     def log(self, msg: str | None = None, params: dict[str, str] | None = None) -> None:
         if msg:
