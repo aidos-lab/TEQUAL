@@ -178,6 +178,8 @@ def fetch_embeddings(
             # Config_ID
             id = int(re.search(r"\d+$", file).group())
             config = load_config(id, exp)
+            if filter_name == "model":
+                filter_name = "module"
             if filter_type == "all":
                 with open(file, "rb") as f:
                     data = pickle.load(f)
