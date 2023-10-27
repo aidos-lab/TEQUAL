@@ -49,11 +49,8 @@ def visualize_embeddings(
         rows=num_rows,
         cols=num_cols,
         column_titles=x_labels,
-        x_title=x_title,
         row_titles=y_labels,
-        y_title=y_title,
     )
-
     fig.print_grid()
     row = 1
     col = 1
@@ -63,9 +60,9 @@ def visualize_embeddings(
         # Sampling for plotly outputs
         if labels is None:
             labels = np.zeros(shape=(N, len(df)))
-        df["labels"] = labels[i].T[19]
+        # df["labels"] = labels[i].T[0]
 
-        sub_df = df.sample(n=(int(len(df) / 5)))
+        sub_df = df.sample(n=(int(len(df) / 10)))
 
         fig.add_trace(
             go.Scatter(
@@ -74,8 +71,8 @@ def visualize_embeddings(
                 mode="markers",
                 opacity=0.4,
                 marker=dict(
-                    size=3,
-                    color=sub_df["labels"],
+                    size=1,
+                    # color=sub_df["labels"],
                     colorscale="jet",
                 ),
             ),
@@ -88,41 +85,64 @@ def visualize_embeddings(
             col += 1
 
     fig.update_layout(
-        width=2000,
+        width=1000,
+        height=500,
         template="simple_white",
         showlegend=False,
         font=dict(color="black"),
         title=None,
     )
 
-    fig.update_xaxes(showticklabels=False, tickwidth=0, tickcolor="rgba(0,0,0,0)")
-    fig.update_yaxes(showticklabels=False, tickwidth=0, tickcolor="rgba(0,0,0,0)")
+    fig.update_annotations(font_size=8)
+    fig.update_xaxes(
+        showticklabels=False,
+        tickwidth=0,
+        tickcolor="rgba(0,0,0,0)",
+        tickfont=dict(family="CMU Sans Serif Demi Condensed", size=10),
+    )
+    fig.update_yaxes(
+        showticklabels=False,
+        tickwidth=0,
+        tickcolor="rgba(0,0,0,0)",
+        tickfont=dict(family="CMU Sans Serif Demi Condensed", size=10),
+    )
     return fig
 
 
 def visualize_dendrogram(T: TEQUAL, configs):
+    labels = list(
+        map(
+            str,
+            [
+                f"({int(cfg.model_params.alpha)},{int(cfg.data_params.batch_size)})"
+                for cfg in configs
+            ],
+        )
+    )
+
     def diagram_distance(_):
         return squareform(T.distance_relation)
 
     fig = ff.create_dendrogram(
         X=np.arange(len(T.diagrams)),
-        labels=list(map(str, [cfg.model_params.module for cfg in configs])),
+        labels=labels,
         distfun=diagram_distance,
         colorscale=px.colors.qualitative.Plotly,
         linkagefun=lambda x: linkage(x, T.linkage),
         color_threshold=T.epsilon,
     )
     fig.update_layout(
-        width=1500,
-        height=1000,
+        width=800,
+        height=500,
         template="simple_white",
         showlegend=False,
         font=dict(color="black", size=10),
-        title="CelebA Topology-Based Model Selection",
     )
 
-    fig.update_xaxes(title=dict(text=f"Models"))
-    fig.update_yaxes(title=dict(text=f"{T.metric} homological distance"))
+    # fig.update_xaxes(
+    # showticklabels=False,
+    # )
+    fig.update_yaxes()
 
     ticktext = fig["layout"]["xaxis"]["ticktext"]
     tickvals = fig["layout"]["xaxis"]["tickvals"]

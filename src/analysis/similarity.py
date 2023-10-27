@@ -104,20 +104,20 @@ if __name__ == "__main__":
 
     cpu_samples = samples.detach().cpu().numpy()
 
-    embedding_grid = vis.visualize_embeddings(
-        T,
-        None,
-        filter_name,
-        configs,
-        labels=labels,
-        x_axis=x_axis,
-        y_axis=y_axis,
-    )
+    # embedding_grid = vis.visualize_embeddings(
+    #     T,
+    #     None,
+    #     filter_name,
+    #     configs,
+    #     labels=labels,
+    #     x_axis=x_axis,
+    #     y_axis=y_axis,
+    # )
 
-    dendrogram, colormap = vis.visualize_dendrogram(T, configs)
+    # dendrogram, colormap = vis.visualize_dendrogram(T, configs)
 
-    embedding_grid.show()
-    dendrogram.show()
+    # embedding_grid.show()
+    # dendrogram.show()
 
     matrices = {}
     for i, X in enumerate(embeddings):
@@ -145,12 +145,12 @@ if __name__ == "__main__":
         logger.info(f"Min Correlation: {np.min(row_correlations)} ")
         logger.info("\n")
 
-    # plt.scatter(
-    #         X.T[0],
-    #         X.T[1],
-    #         alpha=0.3,
-    #         label=f"Embedding {i}",
-    #     )
-    # plt.scatter(cpu_samples.T[0], cpu_samples.T[1], c="black", label="Samples")
-    # plt.legend()
-    # # plt.show()
+    plt.scatter(
+        X.T[0],
+        X.T[1],
+        alpha=0.3,
+        label=f"Embedding {i}",
+    )
+    plt.scatter(cpu_samples.T[0], cpu_samples.T[1], c="black", label="Samples")
+    plt.legend()
+    # plt.show()

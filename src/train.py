@@ -32,8 +32,9 @@ class Experiment:
         self.dev = dev
         self.logger = logger
         self.device = torch.device(
-            "mps:0" if torch.backends.mps.is_available() else "cpu"
+            "mps" if torch.backends.mps.is_available() else "cpu"
         )
+        self.logger.log(msg=f"GPU: {self.device}")
 
         # Load the dataset
         self.dm = loader.load_module("dataset", self.config.data_params)
@@ -55,6 +56,8 @@ class Experiment:
             self.config.model_params.module,
             self.config.data_params.module,
             f"Sample Size: {self.config.data_params.sample_size}",
+            f"batch_size: {self.config.data_params.batch_size}",
+            f"Learning Rate: {self.config.trainer_params.lr}",
         ]
         self.logger.wandb_init(self.model, self.config)
 
@@ -92,38 +95,43 @@ class Experiment:
                 )
 
                 start = time.time()
+            if np.isnan(self.loss.item()):
+                break
 
         self.finalize_run()
 
     def run_epoch(self):
-        with EmissionsTracker(
-            gpu_ids="0",
-            tracking_mode="process",
-        ) as tracker:
-            tracker.start()
-            loader = self.dm.train_dataloader()
-            for batch_idx, (x, y) in enumerate(loader):
-                # Convert to float32 for MPS
-                x, y = x.float(), y.float()
-                X, _ = x.to(self.device), y.to(self.device)
+        # with EmissionsTracker(
+        #     gpu_ids="0",
+        #     tracking_mode="process",
+        #     logging_logger=mylogger,
+        #     log_level="error",
+        # ) as tracker:
+        #     tracker.start()
+        loader = self.dm.train_dataloader()
+        for batch_idx, (x, y) in enumerate(loader):
+            # Convert to float32 for MPS
+            x, y = x.float(), y.float()
+            X, _ = x.to(self.device), y.to(self.device)
 
-                self.optimizer.zero_grad(set_to_none=True)
-                results = self.model(X)
+            self.optimizer.zero_grad(set_to_none=True)
+            results = self.model(X)
 
-                stats = self.model.loss_function(
-                    *results,
-                    batch_idx=batch_idx,
-                    M_N=0.00025,
-                    optimizer_idx=0,
-                )
-                self.loss = stats["loss"]
-                self.loss.backward()
+            stats = self.model.loss_function(
+                *results,
+                batch_idx=batch_idx,
+                M_N=0.00025,
+                optimizer_idx=0,
+            )
+            self.loss = stats["loss"]
+            self.loss.backward()
 
-                self.optimizer.step()
+            self.optimizer.step()
 
-            # get co2 emissions from tracker
-            emissions = tracker.stop()
-            return stats, emissions
+        # get co2 emissions from tracker
+        # emissions = tracker.stop()
+        emissions = 0
+        return stats, emissions
 
         # Delete Train Loader
         del loader
@@ -157,34 +165,32 @@ class Experiment:
 
         embedding = torch.Tensor()
         labels = torch.Tensor()
-        if np.isnan(self.loss.item()):
-            self.logger.log(msg="Not saving embedding: Nans in loss function")
-        else:
-            loader = self.dm.full_dataloader()
-            for x, y in loader:
-                train_data, train_labels = x.float().to(self.device), y.float()
-                labels = torch.cat((labels, train_labels))
 
-                # Run Model on Batch and send to CPU
-                batch_embedding = self.model.latent(train_data).detach().cpu()
+        loader = self.dm.full_dataloader()
+        for x, y in loader:
+            train_data, train_labels = x.float().to(self.device), y.float()
+            labels = torch.cat((labels, train_labels))
 
-                # Update Embedding
-                embedding = torch.cat((embedding, batch_embedding))
+            # Run Model on Batch and send to CPU
+            batch_embedding = self.model.latent(train_data).detach().cpu()
 
-            # Send to CPU
-            embedding_cpu = embedding.numpy()
-            labels_cpu = labels.numpy()
+            # Update Embedding
+            embedding = torch.cat((embedding, batch_embedding))
 
-            # Save array as Pickle
-            results = {f"embedding": embedding_cpu, "labels": labels_cpu}
-            utils.save_embedding(results, self.config)
-            self.logger.log(msg=f"Embedding Size: {embedding.shape}.")
+        # Send to CPU
+        embedding_cpu = embedding.numpy()
+        labels_cpu = labels.numpy()
 
-            # Save Model
-            utils.save_model(self.model, id=self.config.meta.id)
-            self.logger.log(msg=f"Model Saved!")
+        # Save array as Pickle
+        results = {f"embedding": embedding_cpu, "labels": labels_cpu}
+        utils.save_embedding(results, self.config)
+        self.logger.log(msg=f"Embedding Size: {embedding.shape}.")
 
-            # Stop Tracking Emissions
+        # Save Model
+        utils.save_model(self.model, id=self.config.meta.id)
+        self.logger.log(msg=f"Model Saved!")
+
+        # Stop Tracking Emissions
 
 
 def main(cfg):

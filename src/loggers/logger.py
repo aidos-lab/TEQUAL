@@ -53,7 +53,8 @@ class Logger:
         else:
             self.wandb = wandb.init(
                 project=config.meta.name,
-                name=f"({config.model_params.module}, sample_size={config.data_params.sample_size})",
+                group=f"({config.data_params.batch_size})",
+                name=f"({config.model_params.module})",
                 tags=config.meta.tags,
             )
             wandb.watch(model, log_freq=100)

@@ -10,11 +10,38 @@ import numpy as np
 from dotenv import load_dotenv
 from gtda.diagrams import Amplitude, Scaler
 
-significance = 2  # number of stds for an outlier
+significance = 3  # number of stds for an outlier
 
 
 def scaler_fn(x):
     return np.max(x)
+
+
+def iqr_outliers(data):
+    # Sort the data in ascending order
+    data_sorted = sorted(data)
+
+    # Calculate the first quartile (Q1) and third quartile (Q3)
+    n = len(data_sorted)
+    q1_index = (n - 1) // 4
+    q3_index = 3 * (n - 1) // 4
+    q1 = data_sorted[q1_index]
+    q3 = data_sorted[q3_index]
+
+    # Calculate the IQR (Interquartile Range)
+    iqr = q3 - q1
+
+    # Define the lower and upper bounds for outliers
+    lower_bound = q1 - 1.5 * iqr
+    upper_bound = q3 + 1.5 * iqr
+
+    # Find the indices of outliers
+    outliers = []
+    for i, x in enumerate(data):
+        if x < lower_bound or x > upper_bound:
+            outliers.append(i)
+
+    return outliers
 
 
 if __name__ == "__main__":
@@ -82,17 +109,24 @@ if __name__ == "__main__":
 
         anomalous_cfgs = []
         anomalous_embeddings = []
+
+        iqr_configs = [configs[i] for i in iqr_outliers(norms)]
+
         for i, norm in enumerate(norms):
             if abs(norm - mu) > significance * sigma:
                 anomalous_cfgs.append(configs[i])
                 anomalous_embeddings.append(embeddings[i])
 
-        for i, X in enumerate(anomalous_embeddings):
-            plt.scatter(X.T[0], X.T[1], label=anomalous_cfgs[i].meta.id, alpha=0.5)
+        for i, outlier in enumerate(iqr_outliers(norms)):
+            X = embeddings[outlier]
+            plt.scatter(X.T[0], X.T[1], label=iqr_configs[i].meta.id, alpha=0.5)
 
         plt.legend()
         plt.show()
-        logger.info(f"Key: {key_val} | Anomalous Configs: {anomalous_cfgs}")
+        logger.info(
+            f"Key: {key_val} | Anomalous Configs: {[cfg.meta.id for cfg in anomalous_cfgs]}"
+        )
+        logger.info(f"IQR Outliers: {[cfg.meta.id for cfg in iqr_configs]}")
         logger.info(f"Mu: {mu}")
         logger.info(f"Sigma: {sigma}")
         logger.info(f"Significance: {significance}")

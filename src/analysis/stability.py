@@ -41,7 +41,8 @@ if __name__ == "__main__":
     # Loop through Experiments
     for key_val in filter_values:
         distances = utils.load_distance_matrix(filter_name, key_val)
-        matrices[key_val] = distances
+        if len(distances) == 5:
+            matrices[key_val] = distances
 
     matrix_pairs = list(itertools.combinations(matrices, 2))
 

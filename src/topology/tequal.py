@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from gtda.diagrams import Filtering, PairwiseDistance, Scaler
 from gtda.homology import WeakAlphaPersistence
+from scipy.spatial._qhull import QhullError
 from sklearn.cluster import AgglomerativeClustering
 
 import utils
@@ -33,7 +34,7 @@ class TEQUAL:
                 diagram = self.alpha.fit_transform(X)
                 # dgm = Filtering().fit_transform(diagram)
                 diagrams.append(diagram)
-            except (ValueError) as error:
+            except (ValueError, QhullError) as error:
                 self.logger.log(
                     f"TRAINING ERROR: {error} NaNs in the latent space representation"
                 )

@@ -4,6 +4,7 @@ import itertools
 import os
 from multiprocessing import cpu_count
 
+import matplotlib.pyplot as plt
 from gtda.homology import WeakAlphaPersistence
 
 import utils
@@ -37,7 +38,6 @@ if __name__ == "__main__":
 
     plots = []
     for key_val in filter_values:
-        print(key_val)
         embeddings, labels, configs = utils.fetch_embeddings(
             pairs,
             key_val,
@@ -45,29 +45,49 @@ if __name__ == "__main__":
             filter_name,
         )
         T = TEQUAL(data=embeddings, max_dim=max_dim)
-
         T.generate_diagrams()
         T.quotient(epsilon)
 
         distances = T.distance_relation
 
+        print(distances.shape)
+
+        print(len(T.dropped_point_clouds))
+
         utils.save_distance_matrix(distances, filter_name, key_val)
+        # embedding_grid = vis.visualize_embeddings(
+        #     T,
+        #     key_val,
+        #     filter_name,
+        #     configs,
+        #     labels=labels,
+        #     x_axis=x_axis,
+        #     y_axis=y_axis,
+        # )
 
-        embedding_grid = vis.visualize_embeddings(
-            T,
-            key_val,
-            filter_name,
-            configs,
-            labels=labels,
-            x_axis=x_axis,
-            y_axis=y_axis,
-        )
-
-        embedding_grid.show()
-        # embedding_grid.write_image(f"./{name}.svg")
+        # embedding_grid.show()
+        # embedding_grid.write_image(f"./{name}_grid.svg")
         dendrogram, colormap = vis.visualize_dendrogram(T, configs)
-
+        # dendrogram.write_image(f"./{name}_clustering.svg")
         dendrogram.show()
+        fig, ax = plt.subplots(figsize=(10, 10))
+        for i, X in enumerate(embeddings):
+            ax.scatter(X.T[0], X.T[1], alpha=0.5, label=configs[i].meta.id)
+
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.xaxis.set_tick_params(labelbottom=False)
+        ax.yaxis.set_tick_params(labelleft=False)
+
+        ax.set_xticks([])
+        ax.set_yticks([])
+        # ax.axis("off")
+        # ax.legend()
+        plt.show()
+
+        # fig.savefig(f"./{name}_embeddings.png")
+
+        # dendrogram.show()
         # dendrogram.write_image(f"./{name}_dendrogram.svg")
         # experiment = utils.get_experiment_dir()
 

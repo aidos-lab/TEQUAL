@@ -147,7 +147,6 @@ def get_embeddings_dir(dataset: str, model: str):
     root = project_root_dir()
     experiment = read_parameter_file().experiment
     path = os.path.join(root, f"data/{dataset}/embeddings/{experiment}/{model}/")
-
     assert os.path.isdir(path), "Invalid Embeddings Directory"
     return path
 
@@ -206,6 +205,7 @@ def fetch_embeddings(
 
 
 def gtda_reshape(X):
+    X = pd.DataFrame(data=X).dropna(axis=0).values
     return X.reshape(1, *X.shape)
 
 
@@ -255,7 +255,9 @@ def gtda_pad(diagrams, dims=(0, 1)):
 
 
 def remove_unfitted_configs(configs, idxs):
-    print(f"Removing {len(idxs)} config file(s)!")
+    # print(f"Removing {len(idxs)} config file(s)!")
+    new_configs = configs.copy()
     for i in idxs:
-        configs.pop(i)
-    return configs
+        elem = configs[i]
+        new_configs.remove(elem)
+    return new_configs

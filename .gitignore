@@ -16,6 +16,7 @@ data/
 *ipynb
 *ipynb_checkpoints
 *.log
+*.svg
 
 wandb
 *.csv
