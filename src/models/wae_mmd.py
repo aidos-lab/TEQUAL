@@ -31,6 +31,8 @@ class WAE_MMD(BaseVAE):
         self.reg_weight = reg_weight
         self.kernel_type = kernel_type
         self.z_var = latent_var
+
+        assert self.hidden_dims[0] == self.in_channels, "Check in_channels"
         modules = []
 
         # Build Encoder Architechture
@@ -53,7 +55,7 @@ class WAE_MMD(BaseVAE):
 
         # Tracking Encoder Shapes
         self.encoded_shape = self.encoder(
-            torch.rand(1, 1, self.img_size, self.img_size)
+            torch.rand(1, self.in_channels, self.img_size, self.img_size)
         ).shape[1:]
         self.num_features = functools.reduce(
             operator.mul,

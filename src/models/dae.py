@@ -1,3 +1,6 @@
+import functools
+import operator
+
 import numpy as np
 import torch
 from torch import nn
@@ -22,14 +25,14 @@ class DGAECONV(BaseVAE):
 
         # Fixed for now
         self.fc_hidden = 64
-        self.alpha = 3
+        self.alpha = self.config.alpha
 
         _, m, n = self.input_dim
 
-        self.encoder_seq = nn.ModuleList()
+        modules = []
 
         for idx in range(len(self.hidden_dims) - 1):
-            self.encoder_seq.append(
+            modules.append(
                 Conv_BN_LRelu(
                     self.hidden_dims[idx],
                     self.hidden_dims[idx + 1],
@@ -39,19 +42,35 @@ class DGAECONV(BaseVAE):
                 )
             )
 
-        self.en_fc = nn.Linear(self.hidden_dims[-1] * 4 * 4, self.fc_hidden)
+        self.encoder = nn.Sequential(*modules)
+        # Tracking Encoder Shapes
+        self.encoded_shape = self.encoder(
+            torch.rand(1, self.in_channels, self.img_size, self.img_size)
+        ).shape[1:]
+        self.num_features = functools.reduce(
+            operator.mul,
+            list(self.encoded_shape),
+        )
+
+        # VAE Linear Layers
+        self.en_fc = nn.Linear(self.num_features, self.fc_hidden)
         self.to_lat = nn.Linear(self.fc_hidden, self.latent_dim)
+
+        # Batch Norm from:
+        # http://preview.d2l.ai/d2l-en/master/chapter_convolutional-modern/batch-norm.html
         self.strecth = Stretch(self.latent_dim, 2, self.alpha)
 
+        # VAE Linear Layers
         self.to_dec = nn.Linear(self.latent_dim * 2, self.fc_hidden)
-        self.de_fc = nn.Linear(self.fc_hidden, self.hidden_dims[-1] * 4 * 4)
+        self.de_fc = nn.Linear(self.fc_hidden, self.num_features)
 
+        # DECODER
         self.rhidden_dims = self.hidden_dims[::-1]
 
-        self.decoder_seq = nn.ModuleList()
+        modules = []
 
         for idx in range(len(self.rhidden_dims) - 1):
-            self.decoder_seq.append(
+            modules.append(
                 ConvT_BN_LRelu(
                     self.rhidden_dims[idx],
                     self.rhidden_dims[idx + 1],
@@ -60,11 +79,28 @@ class DGAECONV(BaseVAE):
                     padding=1,
                 )
             )
+        self.decoder = nn.Sequential(*modules)
 
-        self.decoder_seq.append(
-            nn.Conv2d(self.rhidden_dims[-1], self.rhidden_dims[-1], 3, padding=1)
+        # FINAL LAYER
+        self.final_layer = nn.Sequential(
+            nn.ConvTranspose2d(
+                self.rhidden_dims[-1],
+                self.rhidden_dims[-1],
+                kernel_size=3,
+                stride=4,
+                padding=1,
+            ),
+            nn.BatchNorm2d(self.rhidden_dims[-1]),
+            nn.LeakyReLU(),
+            nn.Conv2d(
+                self.rhidden_dims[-1],
+                out_channels=self.in_channels,
+                kernel_size=3,
+                stride=4,
+                padding=8,
+            ),
+            nn.Tanh(),
         )
-        self.decoder_seq.append(nn.Sigmoid())
 
     def sample(self, num_samples=100, z=None):
         c = torch.cat((torch.cos(2 * np.pi * z), torch.sin(2 * np.pi * z)), 0)
@@ -80,8 +116,7 @@ class DGAECONV(BaseVAE):
         return reconstr
 
     def encode(self, x):
-        for idx in range(len(self.encoder_seq)):
-            x = self.encoder_seq[idx](x)
+        x = self.encoder(x)
 
         x = torch.flatten(x, start_dim=1)
 
@@ -99,10 +134,11 @@ class DGAECONV(BaseVAE):
     def decode(self, x):
         x = nn.LeakyReLU()(self.to_dec(x))
         x = nn.LeakyReLU()(self.de_fc(x))
-        x = x.view(-1, self.hidden_dims[-1], 4, 4)
+        x = x.view(-1, *self.encoded_shape)
 
-        for idx in range(len(self.decoder_seq)):
-            x = self.decoder_seq[idx](x)
+        x = self.decoder(x)
+        x = self.final_layer(x)
+        # x = x.view(-1, self.img_size, self.img_size)
         return x
 
     def reparameterize(self, z, **args):

@@ -35,6 +35,7 @@ class InfoVAE(BaseVAE):
         self.z_var = latent_var
 
         assert alpha <= 0, "alpha must be negative or zero."
+        assert self.hidden_dims[0] == self.in_channels, "Check in_channels"
 
         self.alpha = alpha
         self.beta = beta
@@ -61,7 +62,7 @@ class InfoVAE(BaseVAE):
 
         # Tracking Encoder Shapes
         self.encoded_shape = self.encoder(
-            torch.rand(1, 1, self.img_size, self.img_size)
+            torch.rand(1, self.in_channels, self.img_size, self.img_size)
         ).shape[1:]
         self.num_features = functools.reduce(
             operator.mul,

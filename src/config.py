@@ -24,7 +24,7 @@ class Meta:
     name: str
     id: int
     description: str
-    project: str = "TEQUAL2023"
+    project: str = "Topological Quotients"
     tags: list[str] = field(default_factory=list)
 
 
@@ -67,6 +67,15 @@ class DataModuleConfig(Protocol):
 
 
 @dataclass
+class XycConfig(DataModuleConfig):
+    module: str = "datasets.xyc"
+    name: str = "XYC"
+    in_channels: int = 1
+    img_size: int = 84
+    num_classes: int = 3
+
+
+@dataclass
 class MnistConfig(DataModuleConfig):
     module: str = "datasets.mnist"
     name: str = "MNIST"
@@ -76,12 +85,37 @@ class MnistConfig(DataModuleConfig):
 
 
 @dataclass
-class XycConfig(DataModuleConfig):
-    module: str = "datasets.xyc"
-    name: str = "XYC"
+class CIFAR10Config(DataModuleConfig):
+    module: str = "datasets.cifar10"
+    name: str = "CIFAR-10"
+    in_channels: int = 3
+    img_size: int = 32
+    num_classes: int = 10
+
+
+@dataclass
+class CelebAConfig(DataModuleConfig):
+    module: str = "datasets.celebA"
+    name: str = "celebA"
+    in_channels: int = 3
+    img_size: int = 64
+    num_classes: int = 40
+
+
+@dataclass
+class LFWPeopleConfig(DataModuleConfig):
+    module: str = "datasets.lfw_people"
+    name: str = "LFWPeople"
+    in_channels: int = 3
+    img_size: int = 200
+
+
+@dataclass
+class FashionMNISTConfig(DataModuleConfig):
+    module: str = "datasets.fashion_mnist"
+    name: str = "FashionMNIST"
     in_channels: int = 1
-    img_size: int = 84
-    num_classes: int = 3
+    img_size: int = 28
 
 
 #  ╭──────────────────────────────────────────────────────────╮

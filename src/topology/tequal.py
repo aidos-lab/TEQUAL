@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from gtda.diagrams import Filtering, PairwiseDistance, Scaler
 from gtda.homology import WeakAlphaPersistence
+from scipy.spatial._qhull import QhullError
 from sklearn.cluster import AgglomerativeClustering
 
 import utils
@@ -27,19 +28,23 @@ class TEQUAL:
 
     def generate_diagrams(self) -> list:
         diagrams = []
-        for X in self.point_clouds:
+        dropped_point_clouds = []
+        for i, X in enumerate(self.point_clouds):
             try:
                 diagram = self.alpha.fit_transform(X)
                 # dgm = Filtering().fit_transform(diagram)
                 diagrams.append(diagram)
-            except (ValueError) as error:
+            except (ValueError, QhullError) as error:
                 self.logger.log(
                     f"TRAINING ERROR: {error} NaNs in the latent space representation"
                 )
+                # Track Dropped Diagrams
+                dropped_point_clouds.append(i)
         self.diagrams = diagrams
+        self.dropped_point_clouds = dropped_point_clouds
         return self.diagrams
 
-    def process_diagrams(self, metric: str = "landscape"):
+    def process_diagrams(self):
         # Pad Diagrams
         padded_diagrams = utils.gtda_pad(self.diagrams, self.dims)
 
@@ -67,7 +72,7 @@ class TEQUAL:
         self.linkage = linkage
 
         # Pad and Clean Diagrams
-        diagrams = self.process_diagrams(metric)
+        diagrams = self.process_diagrams()
 
         # Pairwise Distances
         distance_metric = PairwiseDistance(metric="landscape")
@@ -82,7 +87,7 @@ class TEQUAL:
         )
         self.eq_relation.fit(self.distance_relation)
 
-        return self.distance_relation
+        return self.eq_relation
 
     def summary(self):
         """Dendrogram height filtration"""

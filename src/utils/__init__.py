@@ -6,6 +6,7 @@ from operator import itemgetter
 
 import numpy as np
 import pandas as pd
+import torch
 from dotenv import load_dotenv
 from omegaconf import OmegaConf
 
@@ -25,6 +26,11 @@ def save_config(cfg, folder, filename):
     c = OmegaConf.create(cfg)
     with open(path, "w") as f:
         OmegaConf.save(c, f)
+
+
+def sort_configs(cfg_name):
+    id = [int(i) for i in re.findall(r"\d+", cfg_name)]
+    return id
 
 
 def load_config(id, folder):
@@ -50,14 +56,21 @@ def copy_parameter_file(folder):
 def get_experiment_dir():
     name = read_parameter_file()["experiment"]
     root = project_root_dir()
-    path = os.path.join(root, f"src/experiments/{name}/configs/")
+    path = os.path.join(root, f"experiments/{name}/configs/")
+    return path
+
+
+def get_models_dir():
+    name = read_parameter_file()["experiment"]
+    root = project_root_dir()
+    path = os.path.join(root, f"experiments/{name}/models/")
     return path
 
 
 def create_experiment_folder():
     name = read_parameter_file()["experiment"]
     root = project_root_dir()
-    path = os.path.join(root, f"src/experiments/{name}/configs/")
+    path = os.path.join(root, f"experiments/{name}/configs/")
     shutil.rmtree(path, ignore_errors=True)
     os.makedirs(path)
     return path
@@ -85,6 +98,49 @@ def save_embedding(latent_representation, config):
     file = os.path.join(sub_dir, f"embedding_{config.meta.id}")
     with open(file, "wb") as f:
         pickle.dump(latent_representation, f)
+
+
+def save_model(model, id):
+    path = get_models_dir()
+
+    if not os.path.isdir(path):
+        os.makedirs(path)
+
+    file = os.path.join(path, f"model_{id}")
+    torch.save(model, f=file)
+
+
+def save_distance_matrix(distances, filter_name, filter_val):
+    root = project_root_dir()
+    params = read_parameter_file()
+    out_dir = root + f"experiments/{params.experiment}/results/distances/"
+    if not os.path.isdir(out_dir):
+        os.makedirs(out_dir, exist_ok=True)
+    out_file = os.path.join(out_dir, f"distances_{filter_name}_{filter_val}.pkl")
+    with open(out_file, "wb") as f:
+        pickle.dump(distances, f)
+
+
+def load_distance_matrix(filter_type, filter_val):
+    root = project_root_dir()
+    params = read_parameter_file()
+    distances_in_file = os.path.join(
+        root,
+        "experiments/"
+        + params.experiment
+        + "/results/distances/"
+        + f"distances_{filter_type}_{filter_val}.pkl",
+    )
+    with open(distances_in_file, "rb") as D:
+        distances = pickle.load(D)
+    return distances
+
+
+def load_model(id):
+    folder = get_models_dir()
+    file = os.path.join(folder, f"model_{id}")
+    model = torch.load(file)
+    return model
 
 
 def get_embeddings_dir(dataset: str, model: str):
@@ -119,9 +175,16 @@ def fetch_embeddings(
         for file in files:
             file = os.path.join(dir, file)
             # Config_ID
-            id = int(re.search(r"\d+", file).group())
+            id = int(re.search(r"\d+$", file).group())
             config = load_config(id, exp)
-            if config[filter_type][filter_name] == key_val or filter_type == "all":
+            if filter_name == "model":
+                filter_name = "module"
+            if filter_type == "all":
+                with open(file, "rb") as f:
+                    data = pickle.load(f)
+                    X, y = remove_duplicates(data)
+                embeddings.append((X, y, id))
+            elif config[filter_type][filter_name] == key_val:
                 with open(file, "rb") as f:
                     data = pickle.load(f)
                     X, y = remove_duplicates(data)
@@ -142,6 +205,7 @@ def fetch_embeddings(
 
 
 def gtda_reshape(X):
+    X = pd.DataFrame(data=X).dropna(axis=0).values
     return X.reshape(1, *X.shape)
 
 
@@ -188,3 +252,12 @@ def gtda_pad(diagrams, dims=(0, 1)):
             pos += template_sizes[dim]
 
     return template
+
+
+def remove_unfitted_configs(configs, idxs):
+    # print(f"Removing {len(idxs)} config file(s)!")
+    new_configs = configs.copy()
+    for i in idxs:
+        elem = configs[i]
+        new_configs.remove(elem)
+    return new_configs

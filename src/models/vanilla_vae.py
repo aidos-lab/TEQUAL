@@ -22,7 +22,9 @@ class VanillaVAE(BaseVAE):
         # Data Description
         self.in_channels = self.config.in_channels
         self.img_size = self.config.img_size
-        self.input_dim = self.img_size**2
+        self.input_dim = (self.img_size**2) * self.in_channels
+
+        assert self.hidden_dims[0] == self.in_channels, "Check in_channels"
 
         modules = []
 
@@ -46,7 +48,7 @@ class VanillaVAE(BaseVAE):
 
         # Tracking Encoder Shapes
         self.encoded_shape = self.encoder(
-            torch.rand(1, 1, self.img_size, self.img_size)
+            torch.rand(1, self.in_channels, self.img_size, self.img_size)
         ).shape[1:]
         self.num_features = functools.reduce(
             operator.mul,

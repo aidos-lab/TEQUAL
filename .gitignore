@@ -6,11 +6,17 @@
 .env
 .venv
 .vscode
+experiments/
+notebooks/
 
 # Outputs
 data/
 *.yaml
 *.html
 *ipynb
+*ipynb_checkpoints
+*.log
+*.svg
 
-
+wandb
+*.csv

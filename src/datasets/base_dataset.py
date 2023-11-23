@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 import torch
-from torch.utils.data import RandomSampler
+from torch.utils.data import RandomSampler, SequentialSampler
 from torch_geometric.data import Dataset
 from torch_geometric.loader import DataLoader, ImbalancedSampler
 
@@ -21,7 +21,6 @@ class DataModule(ABC):
     def __init__(self, config: DataModuleConfig) -> None:
         super().__init__()
         self.config = config
-        self.random_sampler = None
         self.entire_ds = self.setup()
         self.prepare_data()
 
@@ -51,7 +50,7 @@ class DataModule(ABC):
             return
 
         self.train_ds, self.test_ds, self.val_ds = torch.utils.data.random_split(
-            self.entire_ds, [0.4, 0.3, 0.3]
+            self.entire_ds, [0.6, 0.3, 0.1]
         )
 
     def train_dataloader(self) -> DataLoader:
@@ -71,7 +70,6 @@ class DataModule(ABC):
             self.val_ds,
             batch_size=self.config.batch_size,
             num_workers=self.config.num_workers,
-            # sampler = ImbalancedSampler(self.val_ds),
             shuffle=False,
             pin_memory=self.config.pin_memory,
             multiprocessing_context="fork",
@@ -82,7 +80,6 @@ class DataModule(ABC):
             self.test_ds,
             batch_size=self.config.batch_size,
             num_workers=self.config.num_workers,
-            # sampler = ImbalancedSampler(self.test_ds),
             shuffle=False,
             pin_memory=self.config.pin_memory,
             multiprocessing_context="fork",
@@ -91,7 +88,7 @@ class DataModule(ABC):
     def full_dataloader(self) -> DataLoader:
         return DataLoader(
             self.train_ds,
-            batch_size=len(self.train_ds),
+            batch_size=self.config.batch_size,
             num_workers=self.config.num_workers,
             shuffle=False,
             pin_memory=self.config.pin_memory,

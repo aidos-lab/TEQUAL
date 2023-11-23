@@ -1,16 +1,27 @@
 from __future__ import annotations
 
-import logging
-
-from typing import Callable, Any
-import time
 import functools
+import logging
+import os
+import time
+from typing import Any, Callable
+
+from dotenv import load_dotenv
 
 import wandb
 
+load_dotenv()
+root = os.getenv("root")
+
 
 class Logger:
-    def __init__(self, dev: bool = True):
+    def __init__(
+        self,
+        exp: str,
+        name: str,
+        dev: bool = True,
+        out_file: bool = True,
+    ):
         self.dev = dev
         self.wandb = None
 
@@ -25,20 +36,28 @@ class Logger:
         ch.setFormatter(formatter)
         self.logger.addHandler(ch)
 
-        """ fh = logging.FileHandler(filename=f"./logs/test-{timestr}.logs",mode="a") """
-        """ fh.setLevel(logging.DEBUG) """
-        """ fh.setFormatter(formatter) """
-        """ self.logger.addHandler(fh) """
+        if out_file:
+            logs_dir = f"{root}/experiments/{exp}/logs/"
+            if not os.path.isdir(logs_dir):
+                os.makedirs(logs_dir, exist_ok=True)
 
-    def wandb_init(self, config):
+            log_file = os.path.join(logs_dir, f"{name}.log")
+            fh = logging.FileHandler(filename=log_file, mode="a")
+            fh.setLevel(logging.DEBUG)
+            fh.setFormatter(formatter)
+            self.logger.addHandler(fh)
+
+    def wandb_init(self, model, config):
         if self.dev:
             self.wandb = None
         else:
             self.wandb = wandb.init(
-                project=config.project,
-                name=config.name,
-                tags=config.tags,
+                project=config.meta.name,
+                group=f"({config.data_params.batch_size})",
+                name=f"({config.model_params.module})",
+                tags=config.meta.tags,
             )
+            wandb.watch(model, log_freq=100)
 
     def log(self, msg: str | None = None, params: dict[str, str] | None = None) -> None:
         if msg:
