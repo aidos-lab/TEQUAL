@@ -30,7 +30,7 @@ search to latent representations with "peculiar" topologies and geometries.
 Clone the repository and install the required dependencies using Poetry:
 
 ```bash
-git clone https://github.com/your-username/TEQUAL.git
+git clone https://github.com/aidos-lab/TEQUAL.git
 cd TEQUAL
 poetry install
 ```
