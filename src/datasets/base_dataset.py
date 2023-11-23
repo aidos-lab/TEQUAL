@@ -52,7 +52,6 @@ class DataModule(ABC):
         self.train_ds, self.test_ds, self.val_ds = torch.utils.data.random_split(
             self.entire_ds, [0.6, 0.3, 0.1]
         )
-        print("Length Validation DS")
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(
@@ -87,7 +86,6 @@ class DataModule(ABC):
         )
 
     def full_dataloader(self) -> DataLoader:
-
         return DataLoader(
             self.train_ds,
             batch_size=self.config.batch_size,

@@ -16,7 +16,7 @@ from metrics.metrics import compute_recon_loss
 torch._C._mps_emptyCache()
 
 my_experiment = utils.read_parameter_file().experiment
-mylogger = Logger(exp=my_experiment, name="training_results", dev=False)
+mylogger = Logger(exp=my_experiment, name="training_results", dev=True)
 
 
 class Experiment:
@@ -151,7 +151,6 @@ class Experiment:
 
     @timing(mylogger)
     def compute_metrics(self, epoch):
-
         val_loss = compute_recon_loss(self.model, self.dm.val_dataloader())
 
         # Log statements to console
@@ -162,7 +161,6 @@ class Experiment:
 
     @timing(mylogger)
     def save_run(self):
-
         embedding = torch.Tensor()
         labels = torch.Tensor()
 
@@ -194,7 +192,6 @@ class Experiment:
 
 
 def main(cfg):
-
     exp = Experiment(cfg, logger=mylogger, dev=False)
     # Logging
     exp.logger.log(msg=f"Starting Experiment {exp.config.meta.id}")

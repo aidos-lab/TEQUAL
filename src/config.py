@@ -102,6 +102,22 @@ class CelebAConfig(DataModuleConfig):
     num_classes: int = 40
 
 
+@dataclass
+class LFWPeopleConfig(DataModuleConfig):
+    module: str = "datasets.lfw_people"
+    name: str = "LFWPeople"
+    in_channels: int = 3
+    img_size: int = 200
+
+
+@dataclass
+class FashionMNISTConfig(DataModuleConfig):
+    module: str = "datasets.fashion_mnist"
+    name: str = "FashionMNIST"
+    in_channels: int = 1
+    img_size: int = 28
+
+
 #  ╭──────────────────────────────────────────────────────────╮
 #  │ Trainer configurations                                   │
 #  ╰──────────────────────────────────────────────────────────╯
