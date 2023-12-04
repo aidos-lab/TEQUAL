@@ -107,7 +107,7 @@ class LFWPeopleConfig(DataModuleConfig):
     module: str = "datasets.lfw_people"
     name: str = "LFWPeople"
     in_channels: int = 3
-    img_size: int = 200
+    img_size: int = 224
 
 
 @dataclass

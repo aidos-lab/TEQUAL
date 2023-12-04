@@ -31,7 +31,6 @@ class LFWPeopleDataModule(DataModule):
                     transform=transforms.Compose(
                         [
                             transforms.Resize((224, 224)),
-                            transforms.RandomCrop((200, 200)),
                             transforms.RandomHorizontalFlip(),
                             transforms.RandomRotation(degrees=15),
                             transforms.ColorJitter(
@@ -51,7 +50,6 @@ class LFWPeopleDataModule(DataModule):
                     transform=transforms.Compose(
                         [
                             transforms.Resize((224, 224)),
-                            transforms.RandomCrop((200, 200)),
                             transforms.RandomHorizontalFlip(),
                             transforms.RandomRotation(degrees=15),
                             transforms.ColorJitter(
