@@ -87,7 +87,7 @@ class Experiment:
                     msg=f"epoch {epoch} | train recon loss {recon_loss:.2f}"
                 )
 
-            if epoch % 10 == 0:
+            if epoch % 10 == 0 and epoch > 0:
                 end = time.time()
                 self.compute_metrics(epoch)
                 self.logger.log(

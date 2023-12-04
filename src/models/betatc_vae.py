@@ -142,9 +142,7 @@ class BetaTCVAE(BaseVAE):
         result = result.view(-1, *self.encoded_shape)
         result = self.decoder(result)
 
-        # TODO: Figure out how/why this final layer works
-        # result = self.final_layer(result)
-        # result = result.view(-1, self.img_size, self.img_size)
+        result = self.final_layer(result)
         return result
 
     def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
