@@ -9,8 +9,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 from dotenv import load_dotenv
 from gtda.diagrams import Amplitude, Scaler
+from scipy.spatial.distance import cdist
 
 significance = 3  # number of stds for an outlier
+
+
+def approximate_diameter(points, num_samples=10000):
+    "Approximate Diameter"
+    subset = [np.random.choice(len(points))]
+    for _ in range(num_samples - 1):
+        distances = cdist([points[subset[-1]]], points).ravel()
+        new_point = np.argmax(distances)
+        subset.append(new_point)
+    pairwise_distances = cdist(points[subset], points[subset])
+    return np.max(pairwise_distances)
 
 
 def scaler_fn(x):
@@ -91,6 +103,7 @@ if __name__ == "__main__":
             filter_type,
             filter_name,
         )
+        embeddings = [X / approximate_diameter(X) for X in embeddings]
         T = TEQUAL(data=embeddings, max_dim=max_dim)
         T.generate_diagrams()
         diagrams = T.process_diagrams()
