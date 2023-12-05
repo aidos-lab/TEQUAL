@@ -1,6 +1,7 @@
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
+import numpy as np
 from gtda.diagrams import Filtering, PairwiseDistance, Scaler
 from gtda.homology import WeakAlphaPersistence
 from scipy.spatial._qhull import QhullError
@@ -37,7 +38,10 @@ class TEQUAL:
         # Preprocessing Data
         if latent_dim > 0:
             self.projector = projector(n_components=latent_dim)
-            data = [self.projector.fit_transform(X) for X in data]
+            data = [
+                X if np.isnan(X).any() else self.projector.fit_transform(X)
+                for X in data
+            ]
         self.point_clouds = [utils.gtda_reshape(X) for X in data]
         print(self.point_clouds[0].shape)
 
