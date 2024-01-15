@@ -1,46 +1,65 @@
-import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
-from gtda.diagrams import Filtering, PairwiseDistance, Scaler
+from gtda.diagrams import PairwiseDistance
 from gtda.homology import WeakAlphaPersistence
 from scipy.spatial._qhull import QhullError
 from sklearn.cluster import AgglomerativeClustering
+from sklearn.decomposition import PCA
 
 import utils
 from loggers.logger import Logger
 
 
 class TEQUAL:
-    def __init__(self, data: list, max_dim: int = 1, max_edge_length=5) -> None:
-
-        self.point_clouds = [utils.gtda_reshape(X) for X in data]
-
+    def __init__(
+        self,
+        data: list,
+        max_dim: int = 1,
+        latent_dim: int = 2,
+        max_edge_length=5,
+        projector=PCA,
+        n_cpus: int = 4,
+    ) -> None:
         self.dims = tuple(range(max_dim + 1))
-
         self.filtration_inf = max_edge_length
-
         self.alpha = WeakAlphaPersistence(
-            homology_dimensions=self.dims, max_edge_length=max_edge_length
+            homology_dimensions=self.dims,
+            max_edge_length=max_edge_length,
+            n_jobs=n_cpus,
         )
         self.diagrams = None
         self.distance_relation = None
         self.eq_relation = None
         self.logger = Logger
 
+        # Preprocessing Data
+        if latent_dim > 0:
+            print(f"Projecting Embeddings down to {latent_dim} Dimensions")
+            self.projector = projector(n_components=latent_dim)
+            data = [
+                X if np.isnan(X).any() else self.projector.fit_transform(X)
+                for X in data
+            ]
+        self.point_clouds = [utils.gtda_reshape(X) for X in data]
+
     def generate_diagrams(self) -> list:
+        print("Generating Persistence Diagrams")
         diagrams = []
         dropped_point_clouds = []
+
         for i, X in enumerate(self.point_clouds):
             try:
+                print(f"Diagram {i+1}/{len(self.point_clouds)}")
                 diagram = self.alpha.fit_transform(X)
-                # dgm = Filtering().fit_transform(diagram)
                 diagrams.append(diagram)
-            except (ValueError, QhullError) as error:
+                # dgm = Filtering().fit_transform(diagram)
+            except (ValueError, QhullError, IndexError) as error:
                 self.logger.log(
                     f"TRAINING ERROR: {error} NaNs in the latent space representation"
                 )
                 # Track Dropped Diagrams
                 dropped_point_clouds.append(i)
+
         self.diagrams = diagrams
         self.dropped_point_clouds = dropped_point_clouds
         return self.diagrams
@@ -49,12 +68,6 @@ class TEQUAL:
         # Pad Diagrams
         padded_diagrams = utils.gtda_pad(self.diagrams, self.dims)
 
-        # Remove inf features -> replace with large value
-        # np.nan_to_num(padded_diagrams, posinf=posinf, copy=False)
-
-        # TODO: Implement Scaler
-        # scaler = Scaler(metric=metric)
-        # self.scaled_diagrams = scaler.fit_transform(self.diagrams)
         return padded_diagrams
 
     def quotient(
@@ -63,7 +76,6 @@ class TEQUAL:
         metric: str = "landscape",
         linkage: str = "average",
     ) -> AgglomerativeClustering:
-
         if self.diagrams is None:
             self.generate_diagrams()
 
@@ -134,8 +146,13 @@ class TEQUAL:
         G = G_original.copy(as_view=False)
         right = {i for i in G.nodes() if i[-1] == 1}
         while right:
-            rep, rep_deg = max({(i,G.out_degree(i)) for i in G.nodes() if i == 0}, key=lambda tup:tup[-1])
-            self.set_cover_representatives[rep[0]] = sorted([i[0] for i in G_original.successors(rep)])
+            rep, rep_deg = max(
+                {(i, G.out_degree(i)) for i in G.nodes() if i == 0},
+                key=lambda tup: tup[-1],
+            )
+            self.set_cover_representatives[rep[0]] = sorted(
+                [i[0] for i in G_original.successors(rep)]
+            )
             current_successors = list(G.successors(rep))
             G.remove_nodes_from([rep, *current_successors])
             right -= set(current_successors)
@@ -154,7 +171,12 @@ class TEQUAL:
         G.add_nodes_from([(i, 0) for i in range(n_probes)])
         G.add_nodes_from([(i, 1) for i in range(n_probes)])
         for i in range(n_probes):
-            edges = [((i, 0), (j, 1)) for j in np.argwhere(self.set_cover_distances[i] <= self.set_cover_epsilon).squeeze()]
+            edges = [
+                ((i, 0), (j, 1))
+                for j in np.argwhere(
+                    self.set_cover_distances[i] <= self.set_cover_epsilon
+                ).squeeze()
+            ]
             G.add_edges_from(edges)
         return G
 
