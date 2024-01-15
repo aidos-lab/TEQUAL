@@ -30,6 +30,11 @@ if __name__ == "__main__":
         filter_type="all",
         filter_name=params.plotting_params.filter[1],
     )
+    # Normalize Spaces
+    embeddings = [
+        X / utils.approximate_diameter(X, num_samples=1000) for X in embeddings
+    ]
+
     T = TEQUAL(
         data=embeddings, max_dim=1, latent_dim=2
     )  # latent dim here is output dimension of PCA
