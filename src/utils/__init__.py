@@ -152,6 +152,28 @@ def load_model(id):
     model = torch.load(file)
     return model
 
+def load_pickle_from_file(file):
+    with open(file, "rb") as f:
+        pkl = pickle.load(f)
+    return pkl
+
+def list_dir(path, order="id", full_path=True):
+    """
+    Return a list of files in the directory path, ordered by "id" (default) or alphabetically (otherwise),
+    using the full path (default) or the filename only (if full_path is False).
+    :param path:
+    :param order:
+    :param full_path:
+    :return:
+    """
+    files = sorted(os.listdir(path), key=lambda string: int(string.split("_")[-1]) if order == "id" else string)
+    if full_path:
+        files = [os.path.join(path, file) for file in files]
+    return files
+
+
+def ensure_exists(path):
+    os.makedirs(path, exist_ok=True)
 
 def get_embeddings_dir(dataset: str, model: str):
     root = project_root_dir()
