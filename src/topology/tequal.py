@@ -1,6 +1,3 @@
-import os
-from concurrent.futures import ProcessPoolExecutor, as_completed
-
 import numpy as np
 from gtda.diagrams import Filtering, PairwiseDistance, Scaler
 from gtda.homology import WeakAlphaPersistence
@@ -18,7 +15,7 @@ class TEQUAL:
         self,
         data: list,
         max_dim: int = 1,
-        latent_dim: int = 3,
+        latent_dim: int = 2,
         max_edge_length=5,
         projector=PCA,
         n_cpus: int = 4,
@@ -55,7 +52,7 @@ class TEQUAL:
                 diagram = self.alpha.fit_transform(X)
                 diagrams.append(diagram)
                 # dgm = Filtering().fit_transform(diagram)
-            except (ValueError, QhullError) as error:
+            except (ValueError, QhullError, IndexError) as error:
                 self.logger.log(
                     f"TRAINING ERROR: {error} NaNs in the latent space representation"
                 )
@@ -82,7 +79,7 @@ class TEQUAL:
         self,
         epsilon,
         metric: str = "landscape",
-        linkage: str = "average",
+        linkage: str = "complete",
     ) -> AgglomerativeClustering:
         if self.diagrams is None:
             self.generate_diagrams()

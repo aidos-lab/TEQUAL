@@ -46,9 +46,9 @@ class DataModule(ABC):
         raise NotImplementedError()
 
     def prepare_data(self):
-        if self.train_ds and self.test_ds and self.val_ds:
-            return
-
+        # if self.train_ds and self.test_ds and self.val_ds:
+        #     return
+        print("Random train/val/test split")
         self.train_ds, self.test_ds, self.val_ds = torch.utils.data.random_split(
             self.entire_ds, [0.6, 0.3, 0.1]
         )

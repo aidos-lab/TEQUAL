@@ -1,4 +1,4 @@
-"Compare the similarity of models within an equivalence class"
+"Compare the geometric similarity of models within an equivalence class"
 
 import itertools
 import logging
@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from dotenv import load_dotenv
-from sklearn.metrics import pairwise_distances
+from torch.nn import PairwiseDistance
 
 # Read in Embeddings
 # Use TEQUAL + HDBSCAN to automatically generate labels
@@ -19,7 +19,7 @@ from sklearn.metrics import pairwise_distances
 # Permutation test between averages
 
 
-if __name__ == "__main__":
+def geometric_similarity(epsilon):
     load_dotenv()
     root = os.getenv("root")
     sys.path.append(root + "src")
@@ -66,7 +66,9 @@ if __name__ == "__main__":
     logger.addHandler(fh)
     filter_values.sort()
     # Loop through Experiments
+    logger.info(f"Geometric Similarity")
     logger.info(f"Pairs: {pairs}")
+    logger.info(f"GPU?: {device}")
 
     embeddings, labels, all_configs = utils.fetch_embeddings(
         pairs,
@@ -74,83 +76,69 @@ if __name__ == "__main__":
         "all",  # grab all embeddings in exp
         filter_name,
     )
-
+    embeddings = [X / utils.approximate_diameter(X) for X in embeddings]
     T = TEQUAL(data=embeddings, max_dim=max_dim)
     quotient = T.quotient(epsilon)
 
     configs = utils.remove_unfitted_configs(all_configs, T.dropped_point_clouds)
 
-    logger.info(f"configs: {configs}")
-    logger.info(f"Labels: {quotient.labels_}")
+    logger.info(f"Landscape Distances: {T.distance_relation}")
+    logger.info(f"Quotient Labels: {quotient.labels_}")
     assert len(quotient.labels_) == len(configs), "Inconsistent number of objects"
 
-    samples = torch.randn(10, params.model_params.latent_dim[0]).to(device)
-
-    imgs = {}
-    for label in np.unique(quotient.labels_):
-
-        mask = np.where(quotient.labels_ == label, True, False)
-        idxs = np.array(range(len(configs)))[mask]
-        for i in idxs:
-            cfg = configs[i]
-            model_id = cfg.meta.id
-            model = utils.load_model(model_id)
-            model.to(device)
-            imgs[model_id] = {label: model.decode(samples).detach().cpu().numpy()}
-
-    for model in imgs:
-
-        imgs[model]
-
-    cpu_samples = samples.detach().cpu().numpy()
-
-    # embedding_grid = vis.visualize_embeddings(
-    #     T,
-    #     None,
-    #     filter_name,
-    #     configs,
-    #     labels=labels,
-    #     x_axis=x_axis,
-    #     y_axis=y_axis,
-    # )
-
-    # dendrogram, colormap = vis.visualize_dendrogram(T, configs)
-
-    # embedding_grid.show()
-    # dendrogram.show()
-
+    pdist = PairwiseDistance(keepdim=True)
     matrices = {}
+    embeddings = torch.tensor(np.array(embeddings)).to(device)
+
     for i, X in enumerate(embeddings):
-        # Pairwise distances between embeddings
-        matrices[i] = pairwise_distances(X, metric="euclidean")
-
-    matrix_pairs = list(itertools.combinations(matrices, 2))
-
-    for x, y in matrix_pairs:
-        logger.info(f"Computing correlation for {(x,y)}")
-        row_correlations = []
-        X = matrices[x]
-        Y = matrices[y]
-
-        for i in range(len(X)):
-            result = np.corrcoef(
-                X[i],
-                Y[i],
+        if not torch.isnan(X).any():
+            matrices[i] = torch.nn.functional.pairwise_distance(
+                X.unsqueeze(1), X.unsqueeze(0)
             )
-            val = np.min(result)
+
+    print(matrices[1].shape)
+    ids = list(matrices.keys())
+
+    # inter_cluster_norms = {}
+    # intra_cluster_norms = {}
+
+    # for label in np.unique(quotient.labels_):
+    #     logger.info(msg="\n")
+    #     logger.info(f"Computations for Cluster {label}")
+    #     mask = np.where(quotient.labels_ == label, True, False)
+
+    #     inter_idxs = np.array(ids)[mask]
+    #     intra_idxs = np.array(ids)[~mask]
+
+    #     logger.info(f"Staring Intercluster Comparisons")
+    #     if len(inter_idxs) > 1:
+    # cluster_pairs = list(itertools.combinations(inter_idxs, 2))
+    # logger.info(f"Intra pairs: {cluster_pairs}")
+    matrix_pairs = list(itertools.combinations(matrices, 2))
+    all_correlations = []
+    for i, j in matrix_pairs:
+        # Loop through each sample
+        logger.info(f"Comparing Distances between Embedding {i} and {j}")
+
+        X = matrices[i]
+        Y = matrices[j]
+
+        row_correlations = []
+        for v1, v2 in zip(X, Y):
+            stack = torch.stack((v1, v2))
+            corr = torch.corrcoef(stack)
+            val = torch.min(corr)
             row_correlations.append(val)
-        logger.info(f"Average: {np.mean(row_correlations)}")
-        logger.info(f"Median Correlation: {np.median(row_correlations)}")
-        logger.info(f"Max Correlation: {np.max(row_correlations)}")
-        logger.info(f"Min Correlation: {np.min(row_correlations)} ")
+        row_correlations = torch.tensor(row_correlations)
+        all_correlations.append(torch.mean(row_correlations))
+        logger.info(f"Average: {torch.mean(row_correlations)}")
+        logger.info(f"Median Correlation: {torch.median(row_correlations)}")
+        logger.info(f"Max Correlation: {torch.max(row_correlations)}")
+        logger.info(f"Min Correlation: {torch.min(row_correlations)} ")
         logger.info("\n")
 
-    plt.scatter(
-        X.T[0],
-        X.T[1],
-        alpha=0.3,
-        label=f"Embedding {i}",
-    )
-    plt.scatter(cpu_samples.T[0], cpu_samples.T[1], c="black", label="Samples")
-    plt.legend()
-    # plt.show()
+    logger.info(f"GLOBAL AVERAGE: {torch.mean(torch.tensor(all_correlations))}")
+
+
+if __name__ == "__main__":
+    geometric_similarity(0.001)

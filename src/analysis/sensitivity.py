@@ -61,23 +61,17 @@ if __name__ == "__main__":
             filter_type,
             filter_name,
         )
+        # Normalize
+        embeddings = [X / utils.approximate_diameter(X) for X in embeddings]
+
         T = TEQUAL(data=embeddings, max_dim=max_dim)
         T.generate_diagrams()
         diagrams = T.process_diagrams()
 
-        model = T.quotient(epsilon)
-
-        scaler = Scaler(
-            metric=metric,
-            function=scaler_fn,
-        )
-        scaled_diagrams = scaler.fit_transform(diagrams)
-
         # Landscape Norms
         A = Amplitude(metric=metric, order=2)
-        norms = A.fit_transform(scaled_diagrams)
+        norms = A.fit_transform(diagrams)
         score = np.std(norms)
         logger.info(f"{filter_name}: {key_val}")
         logger.info(f"Score: {score}")
-        logger.info(f"Alternative: {len(np.unique(model.labels_))}")
         logger.info("\n")

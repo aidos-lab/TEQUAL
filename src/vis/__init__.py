@@ -17,7 +17,6 @@ pio.renderers.default = "chrome"
 def visualize_embeddings(
     T: TEQUAL, key_val, filter_name, configs, labels=None, x_axis=None, y_axis=None
 ) -> go.Figure:
-
     N = len(T.point_clouds)
 
     params = utils.read_parameter_file()
@@ -50,39 +49,42 @@ def visualize_embeddings(
         cols=num_cols,
         column_titles=x_labels,
         row_titles=y_labels,
+        x_title=x_title,
+        y_title=y_title,
     )
     fig.print_grid()
     row = 1
     col = 1
     for i, embedding in enumerate(T.point_clouds):
-        data = np.squeeze(embedding)
-        df = pd.DataFrame(data, columns=["x", "y"])
-        # Sampling for plotly outputs
-        if labels is None:
-            labels = np.zeros(shape=(N, len(df)))
-        # df["labels"] = labels[i].T[0]
+        if embedding.shape[1] > 0:
+            data = np.squeeze(embedding)
+            df = pd.DataFrame(data, columns=["x", "y"])
+            # Sampling for plotly outputs
+            if labels is None:
+                labels = np.zeros(shape=(N, len(df)))
+            df["labels"] = labels[i].T[0]
 
-        sub_df = df.sample(n=(int(len(df) / 10)))
+            sub_df = df.sample(n=(int(len(df) / 10)))
 
-        fig.add_trace(
-            go.Scatter(
-                x=sub_df["x"],
-                y=sub_df["y"],
-                mode="markers",
-                opacity=0.4,
-                marker=dict(
-                    size=1,
-                    # color=sub_df["labels"],
-                    colorscale="jet",
+            fig.add_trace(
+                go.Scatter(
+                    x=sub_df["x"],
+                    y=sub_df["y"],
+                    mode="markers",
+                    opacity=0.4,
+                    marker=dict(
+                        size=1,
+                        # color=sub_df["labels"],
+                        colorscale="jet",
+                    ),
                 ),
-            ),
-            row=row,
-            col=col,
-        )
-        row += 1
-        if row == num_rows + 1:
-            row = 1
-            col += 1
+                row=row,
+                col=col,
+            )
+            row += 1
+            if row == num_rows + 1:
+                row = 1
+                col += 1
 
     fig.update_layout(
         width=1000,
@@ -109,14 +111,14 @@ def visualize_embeddings(
     return fig
 
 
-def visualize_dendrogram(T: TEQUAL, configs):
+def visualize_dendrogram(
+    T: TEQUAL,
+    configs,
+):
     labels = list(
         map(
             str,
-            [
-                f"({int(cfg.model_params.alpha)},{int(cfg.data_params.batch_size)})"
-                for cfg in configs
-            ],
+            [f"{cfg.meta.id}" for cfg in configs],
         )
     )
 
@@ -132,6 +134,9 @@ def visualize_dendrogram(T: TEQUAL, configs):
         color_threshold=T.epsilon,
     )
     fig.update_layout(
+        title="CIFAR-10 Compression",
+        xaxis_title="Probes",
+        yaxis_title="Landscape Distance",
         width=800,
         height=500,
         template="simple_white",
@@ -139,9 +144,9 @@ def visualize_dendrogram(T: TEQUAL, configs):
         font=dict(color="black", size=10),
     )
 
-    # fig.update_xaxes(
-    # showticklabels=False,
-    # )
+    fig.update_xaxes(
+        showticklabels=False,
+    )
     fig.update_yaxes()
 
     ticktext = fig["layout"]["xaxis"]["ticktext"]

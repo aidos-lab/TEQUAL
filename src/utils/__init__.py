@@ -9,6 +9,7 @@ import pandas as pd
 import torch
 from dotenv import load_dotenv
 from omegaconf import OmegaConf
+from scipy.spatial.distance import cdist
 
 #  ╭──────────────────────────────────────────────────────────╮
 #  │ Utility Functions                                        │
@@ -139,7 +140,7 @@ def load_distance_matrix(filter_type, filter_val):
 def load_model(id):
     folder = get_models_dir()
     file = os.path.join(folder, f"model_{id}")
-    model = torch.load(file)
+    model = torch.load(file, map_location=torch.device("cpu"))
     return model
 
 
@@ -261,3 +262,14 @@ def remove_unfitted_configs(configs, idxs):
         elem = configs[i]
         new_configs.remove(elem)
     return new_configs
+
+
+def approximate_diameter(points, num_samples=10000):
+    "Approximate Diameter"
+    subset = [np.random.choice(len(points))]
+    for _ in range(num_samples - 1):
+        distances = cdist([points[subset[-1]]], points).ravel()
+        new_point = np.argmax(distances)
+        subset.append(new_point)
+    pairwise_distances = cdist(points[subset], points[subset])
+    return np.max(pairwise_distances)

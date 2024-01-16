@@ -1,17 +1,27 @@
 "Driver for generating quotient groups"
 
 import itertools
-import os
 from multiprocessing import cpu_count
 
 import matplotlib.pyplot as plt
+import pandas as pd
 from gtda.homology import WeakAlphaPersistence
+from matplotlib.cm import get_cmap
+from matplotlib.colorbar import ColorbarBase
+from matplotlib.colors import Normalize
+from sklearn.manifold import MDS
 
 import utils
 import vis
 from topology.tequal import TEQUAL
 
 n_jobs = cpu_count()
+
+
+def get_colorbrewer_color(value, N):
+    color_map = get_cmap("viridis")
+    return color_map(value / N)
+
 
 if __name__ == "__main__":
     params = utils.read_parameter_file()
@@ -44,7 +54,8 @@ if __name__ == "__main__":
             filter_type,
             filter_name,
         )
-        T = TEQUAL(data=embeddings, max_dim=max_dim)
+
+        T = TEQUAL(data=embeddings, max_dim=max_dim, latent_dim=2)
         T.generate_diagrams()
         T.quotient(epsilon)
 
@@ -52,9 +63,12 @@ if __name__ == "__main__":
 
         print(distances.shape)
 
-        print(len(T.dropped_point_clouds))
+        print(f"Num Dropped Point Clouds: {len(T.dropped_point_clouds)}")
 
-        utils.save_distance_matrix(distances, filter_name, key_val)
+        updated_configs = [
+            cfg for i, cfg in enumerate(configs) if i not in T.dropped_point_clouds
+        ]
+        # utils.save_distance_matrix(distances, filter_name, key_val)
         # embedding_grid = vis.visualize_embeddings(
         #     T,
         #     key_val,
@@ -67,40 +81,50 @@ if __name__ == "__main__":
 
         # embedding_grid.show()
         # embedding_grid.write_image(f"./{name}_grid.svg")
-        dendrogram, colormap = vis.visualize_dendrogram(T, configs)
-        # dendrogram.write_image(f"./{name}_clustering.svg")
-        dendrogram.show()
-        fig, ax = plt.subplots(figsize=(10, 10))
-        for i, X in enumerate(embeddings):
-            ax.scatter(X.T[0], X.T[1], alpha=0.5, label=configs[i].meta.id)
+        # dendrogram, colormap = vis.visualize_dendrogram(T, updated_configs)
+        # print(colormap)
 
-        ax.set_xscale("log")
-        ax.set_yscale("log")
-        ax.xaxis.set_tick_params(labelbottom=False)
-        ax.yaxis.set_tick_params(labelleft=False)
+        # fig, ax = plt.subplots(figsize=(10, 10))
+        # for i, X in enumerate(embeddings):
+        #     ax.scatter(X.T[0], X.T[1], alpha=0.5, label=configs[i].meta.id)
 
-        ax.set_xticks([])
-        ax.set_yticks([])
-        # ax.axis("off")
-        # ax.legend()
+        # ax.set_xscale("log")
+        # ax.set_yscale("log")
+        # ax.xaxis.set_tick_params(labelbottom=False)
+        # ax.yaxis.set_tick_params(labelleft=False)
+
+        # ax.set_xticks([])
+        # ax.set_yticks([])
+        # # ax.axis("off")
+        # # ax.legend()
+        # plt.show()
+
+        fig2, ax2 = plt.subplots(figsize=(10, 10))
+
+        mds = MDS(n_components=2, dissimilarity="precomputed", random_state=42)
+        mds_embedding = mds.fit_transform(distances)
+
+        # Plot the MDS embedding
+        cfg_ids = [int(cfg.meta.id) for cfg in updated_configs]
+        x = mds_embedding[:, 0]
+        y = mds_embedding[:, 1]
+        for i, x_point, y_point in zip(cfg_ids, x, y):
+            ax2.scatter(
+                x_point,
+                y_point,
+                label=f"Config {i}",
+                s=20,
+                c=[get_colorbrewer_color(i, N=64)],
+            )
+        ax2.set_title(
+            f"{params.experiment}: 2D MDS Embedding of Hyperameter Multiverse"
+        )
+        ax2.set_xlabel("Dimension 1")
+        ax2.set_ylabel("Dimension 2")
+        # ax2.legend(
+        #     fontsize="small",
+        #     loc="upper right",
+        #     bbox_to_anchor=(1.1, 1),
+        # )
+
         plt.show()
-
-        # fig.savefig(f"./{name}_embeddings.png")
-
-        # dendrogram.show()
-        # dendrogram.write_image(f"./{name}_dendrogram.svg")
-        # experiment = utils.get_experiment_dir()
-
-    #     out_dir = os.path.join(experiment, f"../results/plots/")
-    #     if not os.path.isdir(out_dir):
-    #         os.makedirs(out_dir, exist_ok=True)
-    #     file = os.path.join(out_dir, f"{name}_{filter_name}_{key_val}.html")
-    #     plots.append(embedding_grid)
-    #     plots.append(dendrogram)
-    #     vis.save_visualizations_as_html([embedding_grid, dendrogram], file)
-
-    #     # Only produce one diagram
-    #     if filter_name == "all":
-    #         break
-    # file = os.path.join(out_dir, f"{name}_summary.html")
-    # vis.save_visualizations_as_html(plots, file)
