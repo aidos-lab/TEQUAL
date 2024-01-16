@@ -148,7 +148,7 @@ class TEQUAL:
         right = {i for i in G.nodes() if i[-1] == 1}
         while right:
             rep, rep_deg = max(
-                {(i, G.out_degree(i)) for i in G.nodes() if i == 0},
+                {(i, G.out_degree(i)) for i in G.nodes() if i[-1] == 0},
                 key=lambda tup: tup[-1],
             )
             self.set_cover_representatives[rep[0]] = sorted(
@@ -176,9 +176,10 @@ class TEQUAL:
                 ((i, 0), (j, 1))
                 for j in np.argwhere(
                     self.distance_relation[i] <= self.set_cover_epsilon
-                ).squeeze()
+                ).ravel()
             ]
-            G.add_edges_from(edges)
+            if edges:
+                G.add_edges_from(edges)
         return G
 
     def summary(self):
