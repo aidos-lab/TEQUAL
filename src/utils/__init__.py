@@ -43,6 +43,10 @@ def load_config(id, folder):
 def read_parameter_file():
     load_dotenv()
     YAML_PATH = os.getenv("params")
+    params = read_parameter_file_from_path(YAML_PATH)
+    return params
+
+def read_parameter_file_from_path(YAML_PATH):
     params = OmegaConf.load(YAML_PATH)
     return params
 
