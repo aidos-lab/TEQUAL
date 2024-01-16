@@ -39,6 +39,9 @@ if __name__ == "__main__":
     T = TEQUAL(
         data=embeddings, max_dim=1, latent_dim=2
     )  # latent dim here is output dimension of PCA
+    # TODO calling the line below generates weird [Errno 9] Bad file descriptor errors
+    # When the logger is set up and whenever it tries to log something
+    # Probably not important, but might confuse people trying to work with pregenerated results
     T.generate_diagrams()
 
     # TODO FIX we currently only record the excluded diagrams in self.dropped_point_clouds
