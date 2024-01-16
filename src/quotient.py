@@ -51,8 +51,8 @@ if __name__ == "__main__":
     filter_val = "unnormalized"
     # TODO distances do not depend on filter_val, so naming convention for dist matrices is confusing
     T.compute_distances(metric=filter_name)
-    print()
     print(f"Unnormalized Multiverse Metric Space of {params.experiment}")
+    print()
     utils.save_distance_matrix(T.distance_relation, filter_name, filter_val)
 
     # NORMALIZED
@@ -66,8 +66,8 @@ if __name__ == "__main__":
     filter_name = "landscape"
     filter_val = "normalized"
     T.compute_distances(metric=filter_name, new=True)
-    print()
     print(f"Normalized Multiverse Metric Space of {params.experiment}")
+    print()
     utils.save_distance_matrix(T.distance_relation, filter_name, filter_val)
 
 
