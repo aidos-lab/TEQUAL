@@ -2,6 +2,7 @@
 
 import itertools
 from multiprocessing import cpu_count
+import pickle
 
 from gtda.homology import WeakAlphaPersistence
 
@@ -30,17 +31,38 @@ if __name__ == "__main__":
         filter_type="all",
         filter_name=params.plotting_params.filter[1],
     )
-    # Normalize Spaces
-    embeddings = [
-        X / utils.approximate_diameter(X, num_samples=1000) for X in embeddings
-    ]
 
+    # UNNORMALIZED
+    embeddings = [
+        X  for X in embeddings
+    ]
     T = TEQUAL(
         data=embeddings, max_dim=1, latent_dim=2
     )  # latent dim here is output dimension of PCA
     T.generate_diagrams()
 
-    T.quotient(epsilon=0.01)
+    filter_name = "landscape"
+    filter_val = "unnormalized"
+    # TODO distances do not depend on filter_val, so naming convention for dist matrices is confusing
+    T.compute_distances(metric=filter_name)
     print()
-    print(f"Multiverse Metric Space of {params.experiment} :")
-    print(T.distance_relation)
+    print(f"Unnormalized Multiverse Metric Space of {params.experiment}")
+    utils.save_distance_matrix(T.distance_relation, filter_name, filter_val)
+
+    # NORMALIZED
+    embeddings = [
+        X / utils.approximate_diameter(X, num_samples=1000) for X in embeddings
+    ]
+    T = TEQUAL(
+        data=embeddings, max_dim=1, latent_dim=2
+    )  # latent dim here is output dimension of PCA
+    T.generate_diagrams()
+    filter_name = "landscape"
+    filter_val = "normalized"
+    T.compute_distances(metric=filter_name, new=True)
+    print()
+    print(f"Normalized Multiverse Metric Space of {params.experiment}")
+    utils.save_distance_matrix(T.distance_relation, filter_name, filter_val)
+
+
+
