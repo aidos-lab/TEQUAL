@@ -41,6 +41,9 @@ if __name__ == "__main__":
     )  # latent dim here is output dimension of PCA
     T.generate_diagrams()
 
+    # TODO FIX we currently only record the excluded diagrams in self.dropped_point_clouds
+    # This makes it hard to reconstruct which points belong to which embeddings
+
     filter_name = "landscape"
     filter_val = "unnormalized"
     # TODO distances do not depend on filter_val, so naming convention for dist matrices is confusing
