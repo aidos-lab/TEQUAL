@@ -123,8 +123,13 @@ def save_distance_matrix(distances, filter_name, filter_val):
 
 
 def load_distance_matrix(filter_type, filter_val):
-    root = project_root_dir()
     params = read_parameter_file()
+    distances = load_distance_matrix_for_experiment(params, filter_type, filter_val)
+    return distances
+
+
+def load_distance_matrix_for_experiment(params, filter_type, filter_val):
+    root = project_root_dir()
     distances_in_file = os.path.join(
         root,
         "experiments/"
