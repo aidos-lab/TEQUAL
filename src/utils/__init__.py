@@ -114,9 +114,9 @@ def save_model(model, id):
 def save_distance_matrix(distances, filter_name, filter_val):
     root = project_root_dir()
     params = read_parameter_file()
-    out_dir = root + f"experiments/{params.experiment}/results/distances/"
-    if not os.path.isdir(out_dir):
-        os.makedirs(out_dir, exist_ok=True)
+    out_dir = os.path.join(root, f"experiments/{params.experiment}/results/distances/")
+    #if not os.path.isdir(out_dir): # You don't need to check this, exist_ok=True takes care of that
+    os.makedirs(out_dir, exist_ok=True)
     out_file = os.path.join(out_dir, f"distances_{filter_name}_{filter_val}.pkl")
     with open(out_file, "wb") as f:
         pickle.dump(distances, f)

@@ -1,0 +1,6 @@
+matplotlib
+giotto-tda
+giotto-ph
+pandas
+python-dotenv
+jupyterlab
