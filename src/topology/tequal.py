@@ -84,12 +84,8 @@ class TEQUAL:
         self.metric = metric
         self.linkage = linkage
 
-        # Pad and Clean Diagrams
-        diagrams = self.process_diagrams()
-
         # Pairwise Distances
-        distance_metric = PairwiseDistance(metric="landscape")
-        self.distance_relation = distance_metric.fit_transform(diagrams)
+        self.compute_distances(metric=metric)
 
         self.eq_relation = AgglomerativeClustering(
             metric="precomputed",
@@ -102,11 +98,23 @@ class TEQUAL:
 
         return self.eq_relation
 
+    def compute_distances(self, metric="landscape", new=False):
+        """
+        Compute pairwise distances between persistence diagrams.
+        :param metric: Metric to pass to gtda.PairwiseDistance.
+        :param new: Recompute/overwrite existing distances.
+        :return:
+        """
+        if new or self.distance_relation is None:
+            # Pad and Clean Diagrams
+            diagrams = self.process_diagrams()
+            # Pairwise Distances
+            self.distance_relation = PairwiseDistance(metric=metric).fit_transform(diagrams)
+
     # TODO untested
     def compute_set_cover(
         self,
-        epsilon,
-        metric: str = "landscape",
+        epsilon
     ):
         """
         Compute a set of representatives for a given set of embeddings
@@ -121,16 +129,9 @@ class TEQUAL:
 
         # Log Set Cover Parameters
         self.set_cover_epsilon = epsilon
-        self.set_cover_metric = metric
 
-        # Pad and Clean Diagrams
-        diagrams = self.process_diagrams()
-
-        # TODO pull out distance computation and then use this in clustering and set cover
-        # Pairwise Distances
-        distance_metric = PairwiseDistance(metric=metric)
-        # Assuming this results in nxn distance matrix
-        self.set_cover_distances = distance_metric.fit_transform(diagrams)
+        # Compute Set Cover
+        self.compute_distances()
         self.set_cover = self._compute_set_cover()
 
         return self.set_cover
@@ -166,7 +167,7 @@ class TEQUAL:
         There is an edge from (i,0) to (j,1) if the distance between i and j is at most epsilon.
         TODO: At most or less than?
         """
-        n_probes = self.set_cover_distances.shape[0]
+        n_probes = self.distance_relation.shape[0]
         G = nx.DiGraph()
         G.add_nodes_from([(i, 0) for i in range(n_probes)])
         G.add_nodes_from([(i, 1) for i in range(n_probes)])
@@ -174,7 +175,7 @@ class TEQUAL:
             edges = [
                 ((i, 0), (j, 1))
                 for j in np.argwhere(
-                    self.set_cover_distances[i] <= self.set_cover_epsilon
+                    self.distance_relation[i] <= self.set_cover_epsilon
                 ).squeeze()
             ]
             G.add_edges_from(edges)
